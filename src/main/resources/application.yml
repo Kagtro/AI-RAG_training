@@ -1,0 +1,35 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ai-rag
+  datasource:
+    url: jdbc:postgresql://localhost:5433/rag
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 25MB
+
+rag:
+  upload-dir: E:/code/AI-RAG_training/uploads
+
+ai:
+  base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  api-key: ${DASHSCOPE_API_KEY:}
+  chat-model: qwen-plus
+  embedding-model: text-embedding-v3
+  embedding-dimension: 1024
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
