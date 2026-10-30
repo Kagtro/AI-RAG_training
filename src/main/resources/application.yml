@@ -5,7 +5,7 @@ spring:
   application:
     name: ai-rag
   datasource:
-    url: jdbc:postgresql://localhost:5433/rag
+    url: jdbc:postgresql://localhost:5432/rag
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver

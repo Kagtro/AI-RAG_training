@@ -19,7 +19,7 @@ docker compose up -d
 mvn spring-boot:run
 ```
 
-应用默认端口 `8080`，数据库映射到本机 `5433`（避开本机已有的 Odoo PostgreSQL 5432）。
+应用默认端口 `8080`，数据库映射到本机 `5432`。
 
 ### 验证
 
