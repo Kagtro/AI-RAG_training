@@ -50,4 +50,37 @@ public class DocumentDao {
                 .findFirst()
                 .orElse(null);
     }
+
+    public Map<String, Object> findById(long id) {
+        return jdbcClient.sql("""
+                        select id, kb_id, file_name, file_path, file_type, status
+                        from document
+                        where id = :id
+                        """)
+                .param("id", id)
+                .query()
+                .listOfRows()
+                .stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void updateStatus(long id, int status, String errorMsg) {
+        jdbcClient.sql("""
+                        update document
+                        set status = :status, error_msg = CAST(:errorMsg AS VARCHAR)
+                        where id = :id
+                        """)
+                .param("id", id)
+                .param("status", status)
+                .param("errorMsg", errorMsg)
+                .update();
+    }
+
+    public void updateChunkCount(long id, int chunkCount) {
+        jdbcClient.sql("update document set chunk_count = :chunkCount where id = :id")
+                .param("id", id)
+                .param("chunkCount", chunkCount)
+                .update();
+    }
 }

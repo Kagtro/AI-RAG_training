@@ -18,10 +18,13 @@ import java.util.UUID;
 public class DocumentService {
 
     private final DocumentDao documentDao;
+    private final IndexService indexService;
     private final String uploadDir;
 
-    public DocumentService(DocumentDao documentDao, @Value("${rag.upload-dir:uploads}") String uploadDir) {
+    public DocumentService(DocumentDao documentDao, IndexService indexService,
+                           @Value("${rag.upload-dir:uploads}") String uploadDir) {
         this.documentDao = documentDao;
+        this.indexService = indexService;
         this.uploadDir = uploadDir;
     }
 
@@ -49,6 +52,8 @@ public class DocumentService {
         file.transferTo(target.toFile());
 
         long id = documentDao.insert(kbId, originalName, target.toString(), ext);
+        // 异步解析 + 切片 + Embedding 入库
+        indexService.indexAsync(id);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("id", id);

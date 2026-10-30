@@ -36,9 +36,27 @@ curl "http://localhost:8080/api/documents?kbId=1"
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/api/health` | 健康检查（含数据库连通性） |
-| POST | `/api/documents` | 上传文档（pdf/docx/doc/md/txt），落库为待解析 |
-| GET | `/api/documents?kbId=1` | 文档列表 |
+| POST | `/api/documents` | 上传文档（pdf/docx/doc/md/txt），自动异步解析、切片、Embedding 入库 |
+| GET | `/api/documents?kbId=1` | 文档列表（含 status、chunk_count） |
 | GET | `/api/documents/{id}/status` | 单个文档状态 |
+| POST | `/api/documents/{id}/reindex` | 重新解析/重建索引 |
+| GET | `/api/documents/{id}/chunks` | 查看切片（预览） |
+
+## 解析与索引链路（Day 2）
+
+```
+上传 → document(status=0)
+     → @Async indexAsync
+     → PDFBox/POI 解析（PDF 保留页码）
+     → 按段落切片（700 字，overlap 120）
+     → Embedding（批量，默认 1024 维）
+     → 写 chunk 表（vector(1024) + HNSW 索引）
+     → document(status=2, chunk_count=N)
+失败 → status=3 + error_msg
+```
+
+> 未配置 `DASHSCOPE_API_KEY` 时会自动使用 **MockEmbeddingClient**（确定性伪向量），
+> 只用于跑通链路；配置 Key 后自动切换为真实的 `text-embedding-v3`。
 
 ## 目录结构
 
@@ -65,10 +83,10 @@ src/main/resources
 ## 两周路线
 
 - [x] Day1：环境、工程骨架、数据库建表、上传接口、健康检查
-- [ ] Day2：PDF/DOCX 解析 + 切片
-- [ ] Day3：Embedding + 异步索引任务
-- [ ] Day4：向量召回 + 阈值
-- [ ] Day5：Prompt + 引用 + 非流式回答
-- [ ] Day6：SSE 流式 + 聊天页
+- [x] Day2：PDF/DOCX 解析 + 切片 + Embedding 入库（异步索引、可重建）
+- [ ] Day3：向量召回 + 阈值 + 检索接口
+- [ ] Day4：Prompt + 引用 + 非流式回答
+- [ ] Day5：SSE 流式 + 聊天页
+- [ ] Day6：评测集 + 指标
 - [ ] Day7：联调 + demo
-- [ ] 第二周：多轮对话、重排、评测集、缓存限流、部署、简历
+- [ ] 第二周：多轮对话、重排、缓存限流、部署、简历

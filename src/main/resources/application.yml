@@ -20,6 +20,8 @@ spring:
 
 rag:
   upload-dir: E:/code/AI-RAG_training/uploads
+  chunk-size: 700
+  chunk-overlap: 120
 
 ai:
   base-url: https://dashscope.aliyuncs.com/compatible-mode/v1

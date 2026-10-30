@@ -31,3 +31,6 @@ application-local.yml
 uploads/
 logs/
 *.log
+
+# --- 本地测试文档 ---
+test-docs/
