@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业知识库问答（RAG）</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">
+        <span class="logo">RAG</span>
+        <span>企业知识库智能问答</span>
+    </div>
+    <div class="health" id="health">连接中...</div>
+</header>
+
+<main class="layout">
+    <!-- 左侧：知识库与文档管理 -->
+    <aside class="sidebar">
+        <section class="panel">
+            <h2>知识库</h2>
+            <label class="field">
+                <span>知识库 ID</span>
+                <input id="kbId" type="number" value="1" min="1">
+            </label>
+            <div class="upload-row">
+                <input id="fileInput" type="file" accept=".pdf,.docx,.doc,.md,.txt">
+                <button id="uploadBtn" class="btn primary">上传并索引</button>
+            </div>
+            <p class="hint" id="uploadHint">支持 PDF / Word / Markdown / TXT，上传后会自动解析、切片、向量化。</p>
+        </section>
+
+        <section class="panel docs-panel">
+            <div class="panel-head">
+                <h2>文档列表</h2>
+                <button id="refreshBtn" class="btn ghost">刷新</button>
+            </div>
+            <div id="docs" class="docs">加载中...</div>
+        </section>
+    </aside>
+
+    <!-- 右侧：聊天 -->
+    <section class="chat">
+        <div id="messages" class="messages">
+            <div class="empty-tip">
+                <h3>开始提问</h3>
+                <p>先上传文档，再问和文档相关的问题；回答会流式输出并标注引用来源。</p>
+            </div>
+        </div>
+        <form id="chatForm" class="composer">
+            <textarea id="question" rows="2" placeholder="例如：员工出差住宿标准是多少？（Enter 发送，Shift+Enter 换行）"></textarea>
+            <button id="sendBtn" class="btn primary" type="submit">发送</button>
+        </form>
+    </section>
+</main>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
