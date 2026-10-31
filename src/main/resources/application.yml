@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  # 加载项目根目录的 .env 文件（KEY=VALUE 格式，当 properties 读）
+  # optional: 文件不存在也不报错；.env 已加入 .gitignore，不会被提交
+  config:
+    import: optional:file:./.env[.properties]
   application:
     name: ai-rag
   datasource:
@@ -13,6 +17,7 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema.sql
+      encoding: UTF-8
   servlet:
     multipart:
       max-file-size: 20MB
@@ -22,6 +27,11 @@ rag:
   upload-dir: E:/code/AI-RAG_training/uploads
   chunk-size: 700
   chunk-overlap: 120
+  # 检索时默认取回多少个片段（后面用评测集调）
+  top-k: 5
+  # 相似度阈值：低于它认为"资料里没有"，用于拒答
+  # 注意：Mock 向量没有真实语义，联调时可先调低到 0.1
+  score-threshold: 0.1
 
 ai:
   base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
