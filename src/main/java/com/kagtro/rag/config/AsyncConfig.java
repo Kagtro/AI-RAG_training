@@ -21,4 +21,19 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * 问答流式输出专用线程池。
+     * 为什么单独一个：流式回答会占用线程较久，不能和索引任务互相拖累。
+     */
+    @Bean("chatExecutor")
+    public Executor chatExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("chat-");
+        executor.initialize();
+        return executor;
+    }
 }

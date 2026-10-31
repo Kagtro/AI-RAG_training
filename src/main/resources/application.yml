@@ -39,6 +39,9 @@ ai:
   chat-model: qwen-plus
   embedding-model: text-embedding-v3
   embedding-dimension: 1024
+  # 生成参数：温度越低越稳定，max-tokens 控制回答长度
+  temperature: 0.2
+  max-tokens: 800
 
 management:
   endpoints:

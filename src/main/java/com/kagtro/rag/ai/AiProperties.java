@@ -12,6 +12,8 @@ public class AiProperties {
     private String chatModel;
     private String embeddingModel;
     private int embeddingDimension = 1024;
+    private double temperature = 0.2;
+    private int maxTokens = 800;
 
     public String getBaseUrl() { return baseUrl; }
     public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -27,4 +29,10 @@ public class AiProperties {
 
     public int getEmbeddingDimension() { return embeddingDimension; }
     public void setEmbeddingDimension(int embeddingDimension) { this.embeddingDimension = embeddingDimension; }
+
+    public double getTemperature() { return temperature; }
+    public void setTemperature(double temperature) { this.temperature = temperature; }
+
+    public int getMaxTokens() { return maxTokens; }
+    public void setMaxTokens(int maxTokens) { this.maxTokens = maxTokens; }
 }
