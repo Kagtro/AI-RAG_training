@@ -1,0 +1,34 @@
+-- 将评测用例写入 eval_case 表（kb_id=1）
+SET client_encoding = 'UTF8';
+TRUNCATE eval_case RESTART IDENTITY;
+
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '三年以上固定期限的劳动合同，试用期最长可以约定多久？', '六个月（6个月）。', '01_labor_contract_law.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '劳动者在试用期的工资不得低于劳动合同约定工资的多少？', '不得低于劳动合同约定工资的百分之八十（80%），并且不得低于用人单位所在地的最低工资标准。', '01_labor_contract_law.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '建立劳动关系后，最迟应当在多长时间内订立书面劳动合同？', '自用工之日起一个月内。', '01_labor_contract_law.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '劳动者提前多久书面通知用人单位可以解除劳动合同？试用期内提前多久？', '提前三十日；试用期内提前三日。', '01_labor_contract_law.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '解除或终止劳动合同的经济补偿，按工作年限怎么计算？', '每满一年支付一个月工资；六个月以上不满一年的按一年计算；不满六个月的支付半个月工资。', '01_labor_contract_law.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '竞业限制期限最长不得超过多久？', '二年。', '01_labor_contract_law.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '领取基本养老金需要累计缴费满多少年？', '累计缴费满十五年（15年）。', '02_social_insurance_law.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '工伤保险费用由谁缴纳？', '由用人单位缴纳工伤保险费，职工不缴纳。', '02_social_insurance_law.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '领取失业保险金需要满足哪些条件？', '失业前用人单位和本人已经缴纳失业保险费满一年；非因本人意愿中断就业；已经办理失业登记并有求职要求。', '02_social_insurance_law.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '职工累计工作满1年不满10年的，年休假多少天？', '5天。', '03_annual_leave_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '职工累计工作满10年不满20年的，年休假多少天？', '10天。', '03_annual_leave_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '单位未安排年休假，应休未休天数按什么标准支付工资报酬？', '按该职工日工资收入的300%支付年休假工资报酬。', '03_annual_leave_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '单位应当在事故伤害发生之日起多少日内提出工伤认定申请？', '30日内。', '04_work_injury_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '单位未申请工伤认定，职工或其近亲属可以在多长时间内直接申请？', '1年内。', '04_work_injury_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '停工留薪期一般不超过多久？可以延长多久？', '一般不超过12个月；伤情严重或情况特殊，经劳动能力鉴定委员会确认可以适当延长，但延长不得超过12个月。', '04_work_injury_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '单位录用职工后，应当在多长时间内办理住房公积金缴存登记？', '自录用之日起30日内。', '05_housing_fund_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '住房公积金缴存比例的下限是多少？', '职工和单位住房公积金的缴存比例均不得低于5%。', '05_housing_fund_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '职工在哪些情形下可以提取住房公积金？', '包括支付房租、购买/建造/翻建/大修自住住房、偿还购房贷款本息、装修自住住房、支付自住住房物业费、离休退休、完全丧失劳动能力并与单位终止劳动关系、出境定居等。', '05_housing_fund_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '工资至少多长时间支付一次？', '工资至少每月支付一次。', '06_wage_payment_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '解除或终止劳动合同时，工资应当在什么时候结清？', '在解除或终止劳动合同时一次付清劳动者工资。', '06_wage_payment_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '法定休假日安排劳动者工作的，支付不低于工资的百分之多少？', '不低于工资的300%（百分之三百）。', '06_wage_payment_regulation.txt', 'answerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '单位录用职工后，签订书面劳动合同和办理住房公积金缴存登记的法定时限分别是多久？', '书面劳动合同：自用工之日起一个月内；住房公积金缴存登记：自录用之日起30日内。', '01_labor_contract_law.txt;05_housing_fund_regulation.txt', 'cross_doc');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '职工因工受伤停工留薪期间，工资由谁支付？工伤保险费用又由谁缴纳？', '停工留薪期内原工资福利待遇不变，由所在单位按月支付；工伤保险费由用人单位缴纳，职工不缴纳。', '04_work_injury_regulation.txt;02_social_insurance_law.txt', 'cross_doc');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '未休年休假的300%工资报酬，和法定节假日加班的300%工资，是同一回事吗？', '不是。未休年假按日工资收入的300%支付年休假工资报酬（年休假条例）；法定休假日加班按不低于工资的300%支付加班费（工资支付暂行规定），两者依据和适用情形不同。', '03_annual_leave_regulation.txt;06_wage_payment_regulation.txt', 'cross_doc');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '解除劳动合同时，工资什么时候结清？经济补偿又怎么计算？', '工资在解除或终止劳动合同时一次付清；经济补偿按工作年限每满一年支付一个月工资，六个月以上不满一年按一年计算，不满六个月支付半个月工资。', '06_wage_payment_regulation.txt;01_labor_contract_law.txt', 'cross_doc');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '养老保险累计缴费满15年，和年休假天数按累计工作年限计算，是同一个“年限”概念吗？', '不是。15年是领取基本养老金的最低累计缴费年限；年休假天数按职工累计工作年限分档：满1年不满10年5天、满10年不满20年10天、满20年15天。', '02_social_insurance_law.txt;03_annual_leave_regulation.txt', 'cross_doc');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '2026年上海市社保缴费基数的上下限分别是多少？', '资料中没有相关信息。', '', 'unanswerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '住房公积金贷款的最高额度是多少？', '资料中没有相关信息。', '', 'unanswerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '当前住房公积金贷款的利率是多少？', '资料中没有相关信息。', '', 'unanswerable');
+INSERT INTO eval_case(kb_id, question, ground_truth, doc_ids, category) VALUES (1, '加班费是否计入社保缴费基数？', '资料中没有相关信息。', '', 'unanswerable');
