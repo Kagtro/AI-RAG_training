@@ -382,6 +382,7 @@ erDiagram
 | GET | `/api/documents?kbId=1` | 文档列表 |
 | GET | `/api/documents/{id}/status` | 文档解析状态 |
 | POST | `/api/documents/{id}/reindex` | 重建索引 |
+| DELETE | `/api/documents/{id}` | 删除文档（记录 + 切片 + 原文件） |
 | GET | `/api/documents/{id}/chunks` | 查看切片预览 |
 | POST | `/api/search` | 检索（JSON：kbId/question/topK/minScore） |
 | GET | `/api/search?question=...` | 检索（GET 调试） |

@@ -39,6 +39,7 @@ mvn spring-boot:run
 | GET | `/api/documents?kbId=1` | 文档列表（含 status、chunk_count） |
 | GET | `/api/documents/{id}/status` | 单个文档状态 |
 | POST | `/api/documents/{id}/reindex` | 重新解析/重建索引 |
+| DELETE | `/api/documents/{id}` | 删除文档（记录 + 切片 + uploads 原文件） |
 | GET | `/api/documents/{id}/chunks` | 查看切片（预览） |
 | GET/POST | `/api/search` | 向量检索（返回片段 + 相似度） |
 | GET/POST | `/api/chat` | 非流式问答（答案 + 引用） |

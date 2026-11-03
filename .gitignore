@@ -34,3 +34,7 @@ logs/
 
 # --- 本地测试文档 ---
 test-docs/
+
+# --- 评测生成的报告 ---
+eval/report-*.csv
+eval/report-*.json
