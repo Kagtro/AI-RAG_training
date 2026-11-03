@@ -41,6 +41,18 @@ body {
 .health.ok { color: #86efac; }
 .health.bad { color: #fca5a5; }
 
+.topbar-right { display: flex; align-items: center; gap: 18px; }
+
+.eval-link {
+    color: #cfe4f7;
+    font-size: 13px;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, .35);
+    border-radius: 999px;
+    padding: 5px 12px;
+}
+.eval-link:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+
 /* 主体两栏 */
 .layout {
     flex: 1;
@@ -94,6 +106,9 @@ body {
 
 .btn.ghost { background: #eef2f7; color: #374151; padding: 6px 10px; font-size: 12px; }
 .btn.ghost:hover { background: #e2e8f0; }
+
+.btn.danger { background: #fff1f0; color: #b91c1c; padding: 6px 10px; font-size: 12px; }
+.btn.danger:hover { background: #fee2e2; }
 
 .btn.small { padding: 4px 8px; font-size: 12px; }
 

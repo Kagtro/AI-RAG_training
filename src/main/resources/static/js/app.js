@@ -96,6 +96,13 @@ function renderDocuments(docs) {
         reindexBtn.textContent = '重建索引';
         reindexBtn.addEventListener('click', () => reindex(doc.id, doc.file_name));
         actions.appendChild(reindexBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn danger small';
+        deleteBtn.textContent = '删除';
+        deleteBtn.addEventListener('click', () => deleteDocument(doc.id, doc.file_name));
+        actions.appendChild(deleteBtn);
+
         item.appendChild(actions);
 
         container.appendChild(item);
@@ -175,6 +182,25 @@ async function reindex(docId, fileName) {
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// 删除文档：数据库记录 + 切片 + uploads 原文件
+async function deleteDocument(docId, fileName) {
+    const ok = confirm(`确定删除「${fileName}」吗？\n会同时删除数据库记录、切片和 uploads 里的原文件，无法恢复。`);
+    if (!ok) return;
+
+    const hint = $('#uploadHint');
+    try {
+        const response = await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.msg || `HTTP ${response.status}`);
+        }
+        hint.textContent = `已删除 ${fileName}`;
+        await loadDocuments();
+    } catch (e) {
+        hint.textContent = `删除失败：${e.message}`;
+    }
 }
 
 // ========== 聊天 ==========
