@@ -1,4 +1,4 @@
-﻿# 评测集说明（30 题）
+# 评测集说明（30 题）
 
 > 语料：6 份公开法律法规/规章（劳动与人事领域）
 > 评测集：`eval_cases.csv`（30 题），可直接导入 `eval_case` 表：`load_eval.sql`
@@ -87,22 +87,44 @@ select category, count(*) from eval_case group by category;
 -- answerable 21 / cross_doc 5 / unanswerable 4
 ```
 
-## 6. 下一步：评测脚本要做什么
+## 6. 运行评测（已实现）
 
-对每道题：
+启动应用后：
 
-1. 调 `GET /api/search?question=...&topK=5`，拿到召回片段的 `fileName`；
-2. 判断期望文档是否命中 → 记 Recall@5；
-3. 调 `GET /api/chat?question=...`（或用流式），拿到回答 + 引用；
-4. 关键词匹配 + 人工抽检 → 答案正确率；
-5. 不可答题判断是否拒答；
-6. 记录延迟、token、成本；
-7. 输出 `eval/report.csv` + 汇总 Markdown。
+- **查看结果（不花钱）**：浏览器打开 `http://localhost:8080/eval.html`；
+- **重新评测（会调模型）**：页面点“重新评测”，或 `POST /api/eval/run?topK=8&minScore=0.1`；
+- `GET /api/eval/latest`：最近一次结果 JSON（只读文件）；
+- `GET /api/eval/report`：下载最近一次 CSV。
+
+实现：`EvalController` → `EvalService` → `EvalDao`，逐题执行：
+
+1. 调检索，判断期望文档是否进前 K → `recallAtK` / `crossRecallAtK`；
+2. 调问答，拿回答 + 引用；
+3. 关键词命中 → `answerAccuracy`；
+4. 引用文件是否覆盖期望文档 → `groundedness`（衡量答案有没有"脱稿"）；
+5. 不可答题是否拒答 → `refusalAccuracy`；
+6. 记录检索/回答/总耗时 → `p95LatencyMs` / `avgLatencyMs`；
+7. 写 `eval/report-时间.csv`（已 gitignore）。
+
+首轮结果（`topK=8, minScore=0.1`）：
+
+| 指标 | 结果 |
+|---|---|
+| Recall@8（可答 21 题） | 1.0 |
+| 跨文档召回（5 题） | 0.8 |
+| 关键词正确率（26 题） | 1.0 |
+| 拒答准确率（4 题） | 1.0 |
+| 引用覆盖率（groundedness） | 0.54 |
+| P95 延迟 | 5.9s |
+| 平均延迟 | 2.3s |
+
+> `answerAccuracy` 是关键词粗筛；`groundedness` 偏低说明**引用不可靠**（模型有时写法条编号 `[10]`，超出片段范围被丢弃）。下一步应优化引用格式/后处理，并以人工抽检为准。
 
 ## 7. 注意事项
 
 - 这 6 份文档里有 **2003 版工伤保险条例** 和 **2026 版公积金条例**，答案以语料原文为准；
 - `keywords` 只是自动判分的粗筛，最终以人工抽检为准；
+- `groundedness` 只看引用文件是否覆盖期望文档，不代表答案一定忠实于原文；
 - 题量 30 是"够用"的规模，不是学术评测；面试时讲"30 条自建评测集"完全成立；
 - 换 Embedding 模型/改切片参数后，**必须重建索引**再评测，否则对比不公平。
 

@@ -63,8 +63,12 @@ CREATE TABLE IF NOT EXISTS eval_case (
     question     TEXT NOT NULL,
     ground_truth TEXT,
     doc_ids      TEXT,
-    category     VARCHAR(30)   -- 可答 / 跨文档 / 不可答
+    keywords     TEXT,          -- 自动判分关键词，多个用分号分隔
+    category     VARCHAR(30)    -- 可答 / 跨文档 / 不可答
 );
+
+-- 兼容已有数据库：老表没有 keywords 字段时补上
+ALTER TABLE eval_case ADD COLUMN IF NOT EXISTS keywords TEXT;
 
 -- 默认知识库，本地联调用
 INSERT INTO kb(name, owner_id)
