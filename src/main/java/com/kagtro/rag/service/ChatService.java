@@ -36,7 +36,7 @@ public class ChatService {
     private static final String SYSTEM_PROMPT = """
             你是一个严谨的企业知识库助手。请遵守以下规则：
             1. 只依据【资料】中的内容回答，不要使用资料以外的知识。
-            2. 回答中的每个事实后面，必须用 [编号] 标注来源，编号对应资料片段。
+            2. 每个事实后用 [编号] 标注来源；编号只能是资料片段序号（从 1 开始，最大不超过资料条数），不要写法律条款号，也不要用不存在的编号。
             3. 如果【资料】不足以回答问题，直接回答"资料中没有相关信息"，不要猜测。
             4. 用简洁、准确的中文回答，不要输出与问题无关的内容。
             """;
@@ -162,7 +162,8 @@ public class ChatService {
     }
 
     private String buildUserPrompt(String question, List<RetrievedChunk> chunks) {        StringBuilder sb = new StringBuilder();
-        sb.append("【资料】\n");
+        sb.append("【资料】（共 ").append(chunks.size()).append(" 条，引用编号只能是 1~")
+                .append(chunks.size()).append("）\n");
         for (int i = 0; i < chunks.size(); i++) {
             RetrievedChunk chunk = chunks.get(i);
             sb.append('[').append(i + 1).append(']');
