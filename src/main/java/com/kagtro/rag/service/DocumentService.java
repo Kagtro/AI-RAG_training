@@ -1,6 +1,8 @@
 package com.kagtro.rag.service;
 
 import com.kagtro.rag.dao.DocumentDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,6 +18,8 @@ import java.util.UUID;
 
 @Service
 public class DocumentService {
+
+    private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
 
     private final DocumentDao documentDao;
     private final IndexService indexService;
@@ -69,5 +73,44 @@ public class DocumentService {
 
     public Map<String, Object> status(long id) {
         return documentDao.findStatus(id);
+    }
+
+    /**
+     * 删除文档：数据库记录 + 切片（外键级联） + uploads 原文件。
+     *
+     * 注意：解析中/待解析的文档不允许删，避免后台索引任务删完后又写 chunk。
+     *
+     * @return true=删除成功；false=文档不存在
+     */
+    public boolean delete(long id) throws IOException {
+        Map<String, Object> doc = documentDao.findById(id);
+        if (doc == null) {
+            return false;
+        }
+        int status = ((Number) doc.get("status")).intValue();
+        if (status == 0 || status == 1) {
+            throw new IllegalStateException("文档正在解析中，请等解析完成后再删除");
+        }
+
+        String filePath = String.valueOf(doc.get("file_path"));
+        int deleted = documentDao.deleteById(id);
+        if (deleted == 0) {
+            return false;
+        }
+
+        // 只删除 uploads 目录内的文件，防止误删其他路径
+        try {
+            Path root = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Path file = Paths.get(filePath).toAbsolutePath().normalize();
+            if (file.startsWith(root)) {
+                Files.deleteIfExists(file);
+            } else {
+                log.warn("文件不在 uploads 目录内，跳过删除: {}", filePath);
+            }
+        } catch (IOException e) {
+            // 数据库已经删了，文件删除失败只记录日志，避免接口整体失败
+            log.warn("删除原文件失败: {}, {}", filePath, e.getMessage());
+        }
+        return true;
     }
 }

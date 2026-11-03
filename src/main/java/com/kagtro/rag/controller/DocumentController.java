@@ -3,6 +3,9 @@ package com.kagtro.rag.controller;
 import com.kagtro.rag.dao.ChunkDao;
 import com.kagtro.rag.service.DocumentService;
 import com.kagtro.rag.service.IndexService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,5 +65,26 @@ public class DocumentController {
     @GetMapping("/{id}/chunks")
     public List<Map<String, Object>> chunks(@PathVariable long id) {
         return chunkDao.listByDoc(id);
+    }
+
+    /**
+     * 删除文档：数据库记录 + 切片（级联） + uploads 原文件。
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> delete(@PathVariable long id) {
+        try {
+            boolean deleted = documentService.delete(id);
+            if (!deleted) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("code", 404, "msg", "文档不存在"));
+            }
+            return ResponseEntity.ok(Map.of("code", 0, "msg", "已删除"));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("code", 400, "msg", e.getMessage()));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("code", 500, "msg", "删除失败: " + e.getMessage()));
+        }
     }
 }

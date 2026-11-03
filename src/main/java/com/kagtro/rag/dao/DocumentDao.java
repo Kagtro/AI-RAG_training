@@ -83,4 +83,14 @@ public class DocumentDao {
                 .param("chunkCount", chunkCount)
                 .update();
     }
+
+    /**
+     * 删除 document 记录。
+     * chunk 表有 ON DELETE CASCADE，切片会被数据库自动删除。
+     */
+    public int deleteById(long id) {
+        return jdbcClient.sql("delete from document where id = :id")
+                .param("id", id)
+                .update();
+    }
 }
