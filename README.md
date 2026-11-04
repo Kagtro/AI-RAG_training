@@ -10,6 +10,7 @@
 - PostgreSQL 16 + pgvector（Docker）
 - Redis 7（Docker，已部署、暂未使用）
 - 阿里云百炼：qwen-plus（对话）/ text-embedding-v3（向量，1024 维）
+- 检索：向量召回 + BM25 词法召回（RRF 融合）
 - 前端：原生 HTML + CSS + JavaScript（EventSource 接收 SSE）
 
 ## 快速开始
@@ -64,7 +65,7 @@ mvn spring-boot:run
 ### 检索（读）
 
 ```
-问题 → 多意图？查询拆解 → 子问题各自 Embedding/向量召回 → RRF 融合去重 → 阈值/topK → 片段
+问题 → 多意图？查询拆解 → 子问题各自 向量召回 + BM25 词法召回 → RRF 融合去重 → 阈值/topK → 片段
 ```
 
 ### 问答（生成）

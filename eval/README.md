@@ -106,7 +106,7 @@ select category, count(*) from eval_case group by category;
 6. 记录检索/回答/总耗时 → `p95LatencyMs` / `avgLatencyMs`；
 7. 写 `eval/report-时间.csv`（已 gitignore）。
 
-当前结果（`topK=8, minScore=0.1`，开启查询拆解）：
+当前结果（`topK=8, minScore=0.1`，开启查询拆解 + 混合检索）：
 
 | 指标 | 结果 |
 |---|---|
@@ -115,10 +115,10 @@ select category, count(*) from eval_case group by category;
 | 关键词正确率（26 题） | 1.0 |
 | 拒答准确率（4 题） | 1.0 |
 | 引用覆盖率（groundedness） | 1.0 |
-| P95 延迟 | 9.2s |
-| 平均延迟 | 2.7s |
+| P95 延迟 | 9.7s |
+| 平均延迟 | 2.8s |
 
-> 开启查询拆解后跨文档召回从 0.8 提升到 1.0，但 P95 延迟上升（多一次拆解调用 + 多次检索）。可用 `rag.query-decomposition-enabled=false` 做 A/B 对比。
+> 开启查询拆解后跨文档召回从 0.8 提升到 1.0；混合检索（向量 + BM25 + RRF）作为额外召回通道，当前评测集已饱和，主要价值是提升精确词/编号查询的鲁棒性。可用 `rag.query-decomposition-enabled` / `rag.hybrid-enabled` 做 A/B 对比。
 
 ## 7. 注意事项
 
