@@ -448,8 +448,9 @@ function renderRetrieval(container, chunks) {
         const head = document.createElement('div');
         head.className = 'retrieval-head';
         const page = chunk.pageNo == null ? '页码未知' : `第 ${chunk.pageNo} 页`;
-        const score = typeof chunk.score === 'number' ? `相似度 ${(chunk.score * 100).toFixed(1)}%` : '';
-        head.textContent = `[${chunk.index}] ${chunk.fileName} · ${page} · ${score}`;
+        const sourceLabel = { vector: '向量', bm25: 'BM25', hybrid: '混合' }[chunk.source] || '';
+        const score = typeof chunk.score === 'number' ? `相关度 ${(chunk.score * 100).toFixed(1)}%` : '';
+        head.textContent = `[${chunk.index}] ${chunk.fileName} · ${page} · ${score}${sourceLabel ? ' · ' + sourceLabel : ''}`;
         item.appendChild(head);
 
         const body = document.createElement('div');
