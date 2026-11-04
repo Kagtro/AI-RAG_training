@@ -354,15 +354,20 @@ async function sendQuestion(question) {
 
     let finished = false;
 
-    // 事件 1：检索完成（带上片段明细）
+    // 事件 1：检索完成（带上片段明细和查询拆解结果）
     source.addEventListener('meta', (event) => {
         const data = JSON.parse(event.data);
         assistant.status.style.display = 'block';
+        const subQueries = data.queries || [];
         if (!data.retrievedCount) {
             assistant.status.textContent = '未检索到相关片段';
         } else {
-            assistant.status.textContent =
-                `已检索到 ${data.retrievedCount} 个相关片段（来自 ${data.documentCount || 0} 个文档）`;
+            let text = `已检索到 ${data.retrievedCount} 个相关片段（来自 ${data.documentCount || 0} 个文档）`;
+            if (subQueries.length > 1) {
+                text += ` · 已拆解为 ${subQueries.length} 个子问题`;
+            }
+            assistant.status.textContent = text;
+            assistant.status.title = subQueries.join('\n');
         }
         assistant.bubble.textContent = '';
         renderRetrieval(assistant.retrieval, data.chunks || []);
