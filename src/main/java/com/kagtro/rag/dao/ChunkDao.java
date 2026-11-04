@@ -58,6 +58,24 @@ public class ChunkDao {
     }
 
     /**
+     * 词法检索（BM25）用：取当前知识库所有已就绪文档的切片。
+     * 语料小的时候在应用层算 BM25 足够；规模大时应换成 ES/倒排索引。
+     */
+    public List<java.util.Map<String, Object>> findByKbForBm25(long kbId) {
+        return jdbcClient.sql("""
+                        select c.id, c.doc_id, c.page_no, c.content, d.file_name
+                        from chunk c
+                        join document d on d.id = c.doc_id
+                        where c.kb_id = :kbId
+                          and d.status = 2
+                        order by c.id
+                        """)
+                .param("kbId", kbId)
+                .query()
+                .listOfRows();
+    }
+
+    /**
      * 向量检索：在指定知识库内，找出与查询向量最相似的 topK 个切片。
      *
      * SQL 关键点（面试常问）：

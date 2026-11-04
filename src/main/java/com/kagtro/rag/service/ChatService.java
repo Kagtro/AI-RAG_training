@@ -212,6 +212,7 @@ public class ChatService {
             info.put("fileName", chunk.fileName());
             info.put("pageNo", chunk.pageNo());
             info.put("score", Math.round(chunk.score() * 1000) / 1000.0);
+            info.put("source", chunk.source());
             info.put("snippet", snippet(chunk.content(), 200));
             infos.add(info);
         }

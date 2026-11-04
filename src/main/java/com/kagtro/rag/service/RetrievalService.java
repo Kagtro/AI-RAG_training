@@ -9,8 +9,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 检索服务（RAG 的"召回"阶段）。
@@ -32,19 +34,25 @@ public class RetrievalService {
     private final ChunkDao chunkDao;
     private final EmbeddingClient embeddingClient;
     private final QueryDecompositionService queryDecompositionService;
+    private final Bm25Retriever bm25Retriever;
     private final int defaultTopK;
     private final double defaultMinScore;
+    private final boolean hybridEnabled;
 
     public RetrievalService(ChunkDao chunkDao,
                             EmbeddingClient embeddingClient,
                             QueryDecompositionService queryDecompositionService,
+                            Bm25Retriever bm25Retriever,
                             @Value("${rag.top-k:5}") int defaultTopK,
-                            @Value("${rag.score-threshold:0.1}") double defaultMinScore) {
+                            @Value("${rag.score-threshold:0.1}") double defaultMinScore,
+                            @Value("${rag.hybrid-enabled:true}") boolean hybridEnabled) {
         this.chunkDao = chunkDao;
         this.embeddingClient = embeddingClient;
         this.queryDecompositionService = queryDecompositionService;
+        this.bm25Retriever = bm25Retriever;
         this.defaultTopK = defaultTopK;
         this.defaultMinScore = defaultMinScore;
+        this.hybridEnabled = hybridEnabled;
     }
 
     /**
@@ -56,7 +64,8 @@ public class RetrievalService {
                                  Integer pageNo,
                                  String content,
                                  String fileName,
-                                 double score) {
+                                 double score,
+                                 String source) {
     }
 
     /** 检索结果：候选片段 + 实际使用的查询（拆解后可能是多个子问题） */
@@ -96,7 +105,8 @@ public class RetrievalService {
                     row.get("page_no") == null ? null : ((Number) row.get("page_no")).intValue(),
                     String.valueOf(row.get("content")),
                     String.valueOf(row.get("file_name")),
-                    ((Number) row.get("score")).doubleValue()
+                    ((Number) row.get("score")).doubleValue(),
+                    "vector"
             ));
         }
         return result;
@@ -117,33 +127,61 @@ public class RetrievalService {
         double score = (minScore == null) ? defaultMinScore : minScore;
 
         List<String> subQueries = queryDecompositionService.decompose(question);
-        if (subQueries.size() < 2) {
-            // 不需要拆解：保持原来的单查询行为
-            return new RetrievalResult(retrieve(kbId, question, k, score), List.of(question));
-        }
+        List<String> effectiveQueries = subQueries.size() < 2 ? List.of(question) : subQueries;
 
         Map<Long, RetrievedChunk> bestByChunkId = new LinkedHashMap<>();
         Map<Long, Double> rrfScores = new HashMap<>();
+        Map<Long, Set<String>> channels = new HashMap<>();
 
-        for (String subQuery : subQueries) {
-            List<RetrievedChunk> list = retrieve(kbId, subQuery, k, score);
-            for (int i = 0; i < list.size(); i++) {
-                RetrievedChunk chunk = list.get(i);
-                // 同一个片段保留相似度更高的一条
-                bestByChunkId.merge(chunk.chunkId(), chunk,
-                        (a, b) -> a.score() >= b.score() ? a : b);
-                // RRF：只按排名融合，避免不同子查询的分数不可比
-                double rrf = 1.0 / (60 + i + 1);
-                rrfScores.merge(chunk.chunkId(), rrf, Double::sum);
+        for (String query : effectiveQueries) {
+            // 通道 1：向量召回
+            addRanked(retrieve(kbId, query, k, score), "vector", rrfScores, bestByChunkId, channels);
+
+            // 通道 2：BM25 词法召回（中文按字符二元组）
+            if (hybridEnabled) {
+                addRanked(bm25Retriever.search(kbId, query, k), "bm25",
+                        rrfScores, bestByChunkId, channels);
             }
         }
 
         List<RetrievedChunk> merged = rrfScores.entrySet().stream()
                 .sorted(Map.Entry.<Long, Double>comparingByValue(Comparator.reverseOrder()))
                 .limit(k)
-                .map(entry -> bestByChunkId.get(entry.getKey()))
+                .map(entry -> withSource(bestByChunkId.get(entry.getKey()), channels.get(entry.getKey())))
                 .toList();
 
-        return new RetrievalResult(merged, subQueries);
+        return new RetrievalResult(merged, effectiveQueries);
+    }
+
+    private void addRanked(List<RetrievedChunk> list,
+                           String channel,
+                           Map<Long, Double> rrfScores,
+                           Map<Long, RetrievedChunk> bestByChunkId,
+                           Map<Long, Set<String>> channels) {
+        for (int i = 0; i < list.size(); i++) {
+            RetrievedChunk chunk = list.get(i);
+            double rrf = 1.0 / (60 + i + 1);
+            rrfScores.merge(chunk.chunkId(), rrf, Double::sum);
+            bestByChunkId.merge(chunk.chunkId(), chunk,
+                    (a, b) -> a.score() >= b.score() ? a : b);
+            channels.computeIfAbsent(chunk.chunkId(), id -> new LinkedHashSet<>()).add(channel);
+        }
+    }
+
+    private RetrievedChunk withSource(RetrievedChunk chunk, Set<String> channels) {
+        if (chunk == null) {
+            return null;
+        }
+        Set<String> set = channels == null ? Set.of() : channels;
+        String source;
+        if (set.contains("vector") && set.contains("bm25")) {
+            source = "hybrid";
+        } else if (set.contains("bm25")) {
+            source = "bm25";
+        } else {
+            source = "vector";
+        }
+        return new RetrievedChunk(chunk.chunkId(), chunk.docId(), chunk.pageNo(),
+                chunk.content(), chunk.fileName(), chunk.score(), source);
     }
 }
