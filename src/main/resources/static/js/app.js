@@ -13,6 +13,7 @@
 const state = {
     kbId: 1,          // 当前知识库 id
     streaming: false, // 是否正在接收回答（防止重复发送）
+    selectedFiles: [],// 待上传文件（支持多选）
 };
 
 // 文档状态：0 待解析 / 1 解析中 / 2 已就绪 / 3 失败
@@ -115,37 +116,126 @@ function formatTime(value) {
     return isNaN(date.getTime()) ? '' : date.toLocaleString();
 }
 
-// ========== 上传 ==========
-async function uploadFile() {
-    const fileInput = $('#fileInput');
+// ========== 上传（支持多选） ==========
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+// 合并新选择的文件，按 名字+大小+修改时间 去重
+function addSelectedFiles(fileList) {
+    for (const file of fileList) {
+        const exists = state.selectedFiles.some((f) =>
+            f.name === file.name && f.size === file.size && f.lastModified === file.lastModified);
+        if (!exists) state.selectedFiles.push(file);
+    }
+    renderSelectedFiles();
+}
+
+function removeSelectedFile(index) {
+    state.selectedFiles.splice(index, 1);
+    renderSelectedFiles();
+}
+
+function clearSelectedFiles() {
+    state.selectedFiles = [];
+    renderSelectedFiles();
+}
+
+function renderSelectedFiles() {
+    const files = state.selectedFiles;
+    const box = $('#selectedFiles');
+    const list = $('#selectedList');
+    const count = $('#selectedCount');
+    const title = $('#dropzoneTitle');
+    const buttonText = $('#uploadBtnText');
+
+    box.hidden = files.length === 0;
+    count.textContent = String(files.length);
+    title.textContent = files.length === 0 ? '选择文件' : '继续添加文件';
+    buttonText.textContent = files.length === 0 ? '上传并索引' : `上传并索引（${files.length}）`;
+
+    list.innerHTML = '';
+    files.forEach((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'selected-item';
+
+        const main = document.createElement('div');
+        main.className = 'selected-item-main';
+        const name = document.createElement('span');
+        name.className = 'selected-item-name';
+        name.textContent = file.name;
+        name.title = file.name;
+        const size = document.createElement('span');
+        size.className = 'selected-item-size';
+        size.textContent = formatSize(file.size);
+        main.appendChild(name);
+        main.appendChild(size);
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'selected-item-remove';
+        remove.textContent = '×';
+        remove.title = '移除';
+        remove.addEventListener('click', () => removeSelectedFile(index));
+
+        item.appendChild(main);
+        item.appendChild(remove);
+        list.appendChild(item);
+    });
+}
+
+async function uploadFiles() {
     const hint = $('#uploadHint');
     const button = $('#uploadBtn');
+    const files = state.selectedFiles;
 
-    if (!fileInput.files || fileInput.files.length === 0) {
-        hint.textContent = '请先选择一个文件。';
+    if (files.length === 0) {
+        hint.textContent = '请先选择文件。';
         return;
     }
 
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append('kbId', String(state.kbId));
-    formData.append('file', file);
-
     button.disabled = true;
-    hint.textContent = `正在上传 ${file.name} ...`;
+    $('#uploadBtnText').textContent = '上传中...';
+
+    const uploaded = [];
+    const failed = [];
 
     try {
-        const result = await api('/api/documents', { method: 'POST', body: formData });
-        hint.textContent = `上传成功（文档 ID ${result.id}），正在解析、切片、向量化...`;
-        fileInput.value = '';
-        // 轮询解析状态，最多约 30 秒
-        await pollDocumentStatus(result.id);
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            hint.textContent = `正在上传 ${i + 1}/${files.length}：${file.name}`;
+            const formData = new FormData();
+            formData.append('kbId', String(state.kbId));
+            formData.append('file', file);
+            try {
+                const result = await api('/api/documents', { method: 'POST', body: formData });
+                uploaded.push(result);
+            } catch (e) {
+                failed.push(`${file.name}（${e.message}）`);
+            }
+        }
+
+        if (uploaded.length > 0) {
+            hint.textContent = `已上传 ${uploaded.length} 个，正在解析、切片、向量化...`;
+            await Promise.all(uploaded.map((doc) => pollDocumentStatus(doc.id)));
+        }
+
         await loadDocuments();
-        hint.textContent = '索引完成，可以开始提问了。';
+
+        const ready = uploaded.length;
+        if (failed.length === 0) {
+            hint.textContent = `完成：${ready} 个文档已上传并索引。`;
+        } else {
+            hint.textContent = `完成 ${ready} 个，失败 ${failed.length} 个：${failed.join('；')}`;
+        }
+        clearSelectedFiles();
     } catch (e) {
         hint.textContent = `上传失败：${e.message}`;
     } finally {
         button.disabled = false;
+        renderSelectedFiles();
     }
 }
 
@@ -212,18 +302,31 @@ function appendMessage(role, text) {
     const wrapper = document.createElement('div');
     wrapper.className = `msg ${role}`;
 
+    // 状态行：检索中 / 生成中 / 完成（只对 assistant 显示）
+    const status = document.createElement('div');
+    status.className = 'msg-status';
+    status.style.display = 'none';
+    wrapper.appendChild(status);
+
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.textContent = text || '';
     wrapper.appendChild(bubble);
 
+    // 引用来源
     const citations = document.createElement('div');
     citations.className = 'citations';
     wrapper.appendChild(citations);
 
+    // 检索片段详情（可折叠）
+    const retrieval = document.createElement('details');
+    retrieval.className = 'retrieval';
+    retrieval.style.display = 'none';
+    wrapper.appendChild(retrieval);
+
     $('#messages').appendChild(wrapper);
     scrollToBottom();
-    return { wrapper, bubble, citations };
+    return { wrapper, bubble, citations, status, retrieval };
 }
 
 function scrollToBottom() {
@@ -251,10 +354,18 @@ async function sendQuestion(question) {
 
     let finished = false;
 
-    // 事件 1：检索完成
+    // 事件 1：检索完成（带上片段明细）
     source.addEventListener('meta', (event) => {
         const data = JSON.parse(event.data);
-        assistant.bubble.textContent = `已检索到 ${data.retrievedCount} 个相关片段，正在生成回答...\n`;
+        assistant.status.style.display = 'block';
+        if (!data.retrievedCount) {
+            assistant.status.textContent = '未检索到相关片段';
+        } else {
+            assistant.status.textContent =
+                `已检索到 ${data.retrievedCount} 个相关片段（来自 ${data.documentCount || 0} 个文档）`;
+        }
+        assistant.bubble.textContent = '';
+        renderRetrieval(assistant.retrieval, data.chunks || []);
     });
 
     // 事件 2：模型逐段返回
@@ -264,12 +375,17 @@ async function sendQuestion(question) {
         scrollToBottom();
     });
 
-    // 事件 3：生成结束，带回引用
+    // 事件 3：生成结束，带回引用和清洗后的完整回答
     source.addEventListener('done', (event) => {
         const data = JSON.parse(event.data);
         finished = true;
         source.close();
         assistant.wrapper.classList.remove('typing');
+        if (typeof data.answer === 'string') {
+            assistant.bubble.textContent = data.answer;
+        }
+        assistant.status.textContent = `回答完成 · ${(data.citations || []).length} 个引用`;
+        assistant.status.classList.add('done');
         renderCitations(assistant.citations, data.citations);
         setStreaming(false);
         scrollToBottom();
@@ -280,7 +396,10 @@ async function sendQuestion(question) {
         if (event.data) {
             try {
                 const data = JSON.parse(event.data);
-                assistant.bubble.textContent = `服务异常：${data.msg || '未知错误'}`;
+                assistant.status.style.display = 'block';
+                assistant.status.textContent = `生成失败：${data.msg || '未知错误'}`;
+                assistant.status.classList.add('error');
+                assistant.bubble.textContent = '';
             } catch (e) {
                 assistant.bubble.textContent = '服务异常';
             }
@@ -290,12 +409,52 @@ async function sendQuestion(question) {
             setStreaming(false);
         } else if (!finished) {
             // 连接层错误（比如后端没启动）
-            assistant.bubble.textContent = '连接中断，请确认后端服务是否正常。';
+            assistant.status.style.display = 'block';
+            assistant.status.textContent = '连接中断，请确认后端服务是否正常';
+            assistant.status.classList.add('error');
+            assistant.bubble.textContent = '';
             source.close();
             assistant.wrapper.classList.remove('typing');
             setStreaming(false);
         }
     });
+}
+
+// 渲染"检索片段"折叠面板：不用再调 /api/search
+function renderRetrieval(container, chunks) {
+    container.innerHTML = '';
+    if (!chunks || chunks.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'block';
+
+    const summary = document.createElement('summary');
+    summary.textContent = `检索片段（${chunks.length}）`;
+    container.appendChild(summary);
+
+    const list = document.createElement('div');
+    list.className = 'retrieval-list';
+
+    for (const chunk of chunks) {
+        const item = document.createElement('div');
+        item.className = 'retrieval-item';
+
+        const head = document.createElement('div');
+        head.className = 'retrieval-head';
+        const page = chunk.pageNo == null ? '页码未知' : `第 ${chunk.pageNo} 页`;
+        const score = typeof chunk.score === 'number' ? `相似度 ${(chunk.score * 100).toFixed(1)}%` : '';
+        head.textContent = `[${chunk.index}] ${chunk.fileName} · ${page} · ${score}`;
+        item.appendChild(head);
+
+        const body = document.createElement('div');
+        body.className = 'retrieval-body';
+        body.textContent = chunk.snippet || '';
+        item.appendChild(body);
+
+        list.appendChild(item);
+    }
+    container.appendChild(list);
 }
 
 function renderCitations(container, citations) {
@@ -314,8 +473,17 @@ function renderCitations(container, citations) {
 
 // ========== 事件绑定 ==========
 function bindEvents() {
+    // 选择文件：支持多次追加，选完清空 input 以便重复选同一文件
+    $('#fileInput').addEventListener('change', (event) => {
+        addSelectedFiles(event.target.files);
+        event.target.value = '';
+    });
+
+    // 清空已选文件
+    $('#clearFiles').addEventListener('click', clearSelectedFiles);
+
     // 上传
-    $('#uploadBtn').addEventListener('click', uploadFile);
+    $('#uploadBtn').addEventListener('click', uploadFiles);
 
     // 刷新文档列表
     $('#refreshBtn').addEventListener('click', loadDocuments);
