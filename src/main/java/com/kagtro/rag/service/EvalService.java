@@ -87,6 +87,7 @@ public class EvalService {
                              long p95LatencyMs,
                              long avgLatencyMs,
                              String reportPath,
+                             String generatedAt,
                              List<CaseResult> cases) {
     }
 
@@ -200,7 +201,9 @@ public class EvalService {
         String reportPath = writeCsv(results);
         EvalReport report = new EvalReport(results.size(), answerable, crossDoc, unanswerable,
                 topK, minScore, recallAtK, crossRecallAtK, groundedness,
-                answerAccuracy, refusalAccuracy, p95, avg, reportPath, results);
+                answerAccuracy, refusalAccuracy, p95, avg, reportPath,
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                results);
         writeJson(report);
         return report;
     }
