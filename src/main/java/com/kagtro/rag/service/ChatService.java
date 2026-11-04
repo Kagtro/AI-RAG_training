@@ -42,6 +42,7 @@ public class ChatService {
             2. 每个事实后用 [编号] 标注来源；编号只能是资料片段序号（从 1 开始，最大不超过资料条数），不要写法律条款号，也不要用不存在的编号。
             3. 如果【资料】不足以回答问题，直接回答"资料中没有相关信息"，不要猜测。
             4. 用简洁、准确的中文回答，不要输出与问题无关的内容。
+            5. 如果问题包含多个子问题，请分别回答，不要把不同子问题合并成同一个结论。
             """;
 
     /** 匹配回答里的引用标记，例如 [1]、[2] */
@@ -80,8 +81,9 @@ public class ChatService {
             throw new IllegalArgumentException("问题不能为空");
         }
 
-        // 1. 检索：topK + 阈值过滤都在 RetrievalService 里完成
-        List<RetrievedChunk> chunks = retrievalService.retrieve(kbId, question, topK, minScore);
+        // 1. 检索：按需做查询拆解，然后每个子问题独立召回并融合
+        var retrieval = retrievalService.retrieveWithDecomposition(kbId, question, topK, minScore);
+        List<RetrievedChunk> chunks = retrieval.chunks();
 
         // 2. 一条都没召回：直接拒答，不浪费大模型调用，也避免编造
         if (chunks.isEmpty()) {
@@ -121,13 +123,16 @@ public class ChatService {
                 throw new IllegalArgumentException("问题不能为空");
             }
 
-            List<RetrievedChunk> chunks = retrievalService.retrieve(kbId, question, topK, minScore);
+            var retrieval = retrievalService.retrieveWithDecomposition(kbId, question, topK, minScore);
+            List<RetrievedChunk> chunks = retrieval.chunks();
+            List<String> queries = retrieval.queries();
 
             // 没有召回：也发 meta，方便前端显示"未检索到片段"
             if (chunks.isEmpty()) {
                 Map<String, Object> meta = new LinkedHashMap<>();
                 meta.put("retrievedCount", 0);
                 meta.put("documentCount", 0);
+                meta.put("queries", queries);
                 meta.put("chunks", List.of());
                 emitter.send(SseEmitter.event().name("meta").data(meta));
 
@@ -139,7 +144,7 @@ public class ChatService {
                 return;
             }
 
-            emitter.send(SseEmitter.event().name("meta").data(buildMeta(chunks)));
+            emitter.send(SseEmitter.event().name("meta").data(buildMeta(chunks, queries)));
 
             String userPrompt = buildUserPrompt(question, chunks);
             StringBuilder answer = new StringBuilder();
@@ -193,8 +198,8 @@ public class ChatService {
         return sb.toString();
     }
 
-    /** meta 事件：片段数、来源文档数、每个片段的摘要（前端展示检索详情用） */
-    private Map<String, Object> buildMeta(List<RetrievedChunk> chunks) {
+    /** meta 事件：片段数、来源文档数、实际检索用的查询、每个片段的摘要（前端展示检索详情用） */
+    private Map<String, Object> buildMeta(List<RetrievedChunk> chunks, List<String> queries) {
         Set<String> files = new LinkedHashSet<>();
         List<Map<String, Object>> infos = new ArrayList<>();
         for (int i = 0; i < chunks.size(); i++) {
@@ -214,6 +219,7 @@ public class ChatService {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("retrievedCount", chunks.size());
         meta.put("documentCount", files.size());
+        meta.put("queries", queries);
         meta.put("chunks", infos);
         return meta;
     }
@@ -303,8 +309,8 @@ public class ChatService {
             }
         }
 
-        double threshold = Math.max(0.15, bestScore * 0.60);
-        int maxAdd = 2;
+        double threshold = Math.max(0.12, bestScore * 0.35);
+        int maxAdd = 3;
         int added = 0;
 
         for (ScoredChunk item : scored) {

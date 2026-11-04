@@ -32,6 +32,8 @@ rag:
   # 相似度阈值：低于它认为"资料里没有"，用于拒答
   # 注意：Mock 向量没有真实语义，联调时可先调低到 0.1
   score-threshold: 0.1
+  # 查询拆解：多意图问题拆成子问题分别召回（关闭可做 A/B 对比）
+  query-decomposition-enabled: true
 
 ai:
   base-url: https://dashscope.aliyuncs.com/compatible-mode/v1

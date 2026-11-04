@@ -105,9 +105,10 @@ public class EvalService {
 
             long t0 = System.currentTimeMillis();
             try {
-                // 1. 检索（单独计时，用于判断召回）
+                // 1. 检索（与线上问答一致：按需查询拆解 + 融合召回）
                 long r0 = System.currentTimeMillis();
-                List<RetrievedChunk> chunks = retrievalService.retrieve(kbId, question, topK, minScore);
+                var retrieval = retrievalService.retrieveWithDecomposition(kbId, question, topK, minScore);
+                List<RetrievedChunk> chunks = retrieval.chunks();
                 long retrievalMs = System.currentTimeMillis() - r0;
 
                 Set<String> expectedFiles = splitToSet(expected);

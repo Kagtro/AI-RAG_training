@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,15 +31,18 @@ public class RetrievalService {
 
     private final ChunkDao chunkDao;
     private final EmbeddingClient embeddingClient;
+    private final QueryDecompositionService queryDecompositionService;
     private final int defaultTopK;
     private final double defaultMinScore;
 
     public RetrievalService(ChunkDao chunkDao,
                             EmbeddingClient embeddingClient,
+                            QueryDecompositionService queryDecompositionService,
                             @Value("${rag.top-k:5}") int defaultTopK,
                             @Value("${rag.score-threshold:0.1}") double defaultMinScore) {
         this.chunkDao = chunkDao;
         this.embeddingClient = embeddingClient;
+        this.queryDecompositionService = queryDecompositionService;
         this.defaultTopK = defaultTopK;
         this.defaultMinScore = defaultMinScore;
     }
@@ -51,6 +57,10 @@ public class RetrievalService {
                                  String content,
                                  String fileName,
                                  double score) {
+    }
+
+    /** 检索结果：候选片段 + 实际使用的查询（拆解后可能是多个子问题） */
+    public record RetrievalResult(List<RetrievedChunk> chunks, List<String> queries) {
     }
 
     public List<RetrievedChunk> retrieve(long kbId, String question) {
@@ -90,5 +100,50 @@ public class RetrievalService {
             ));
         }
         return result;
+    }
+
+    /**
+     * 带查询拆解的检索：
+     * 1. 判断是否多意图，必要时拆成多个子问题；
+     * 2. 每个子问题独立召回 topK；
+     * 3. 用 RRF（按排名融合）去重排序；
+     * 4. 取最终 topK 作为候选集。
+     *
+     * 不需要拆解时，等价于原来的单查询向量检索。
+     */
+    public RetrievalResult retrieveWithDecomposition(long kbId, String question,
+                                                     Integer topK, Double minScore) {
+        int k = (topK == null || topK <= 0) ? defaultTopK : topK;
+        double score = (minScore == null) ? defaultMinScore : minScore;
+
+        List<String> subQueries = queryDecompositionService.decompose(question);
+        if (subQueries.size() < 2) {
+            // 不需要拆解：保持原来的单查询行为
+            return new RetrievalResult(retrieve(kbId, question, k, score), List.of(question));
+        }
+
+        Map<Long, RetrievedChunk> bestByChunkId = new LinkedHashMap<>();
+        Map<Long, Double> rrfScores = new HashMap<>();
+
+        for (String subQuery : subQueries) {
+            List<RetrievedChunk> list = retrieve(kbId, subQuery, k, score);
+            for (int i = 0; i < list.size(); i++) {
+                RetrievedChunk chunk = list.get(i);
+                // 同一个片段保留相似度更高的一条
+                bestByChunkId.merge(chunk.chunkId(), chunk,
+                        (a, b) -> a.score() >= b.score() ? a : b);
+                // RRF：只按排名融合，避免不同子查询的分数不可比
+                double rrf = 1.0 / (60 + i + 1);
+                rrfScores.merge(chunk.chunkId(), rrf, Double::sum);
+            }
+        }
+
+        List<RetrievedChunk> merged = rrfScores.entrySet().stream()
+                .sorted(Map.Entry.<Long, Double>comparingByValue(Comparator.reverseOrder()))
+                .limit(k)
+                .map(entry -> bestByChunkId.get(entry.getKey()))
+                .toList();
+
+        return new RetrievalResult(merged, subQueries);
     }
 }
