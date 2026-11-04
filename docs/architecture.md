@@ -73,6 +73,7 @@ flowchart TB
 
     subgraph 能力层
         P[TextExtractor<br/>PDFBox/POI]
+        CL[TextCleaner<br/>去页眉页脚/页码/断行]
         CH[ChunkingService]
         EMB[EmbeddingClient<br/>DashScope / Mock]
         LLM[ChatClient<br/>DashScope / Mock]
@@ -117,7 +118,7 @@ flowchart TB
 |---|---|---|
 | `controller/` | HTTP 接口 | 只做参数接收、调用 Service、返回结果；不写业务 |
 | `service/` | 业务编排 | DocumentService（上传）、IndexService（索引）、RetrievalService（检索）、ChatService（问答） |
-| `parser/` | 文档解析 | PDFBox 解析 PDF（按页），POI 解析 DOCX（含表格） |
+| `parser/` | 文档解析与清洗 | PDFBox 解析 PDF（按页），POI 解析 DOCX（含表格）；TextCleaner 去页眉页脚/页码/断行 |
 | `chunk/` | 文本切片 | 段落优先 + 滑动窗口 + overlap |
 | `embedding/` | 向量化 | 接口 + 百炼实现 + Mock 实现 + 选择配置 |
 | `ai/` | 大模型 | ChatClient 接口 + 百炼实现 + Mock 实现 + 参数配置 |
@@ -160,7 +161,8 @@ src/main/java/com/kagtro/rag/
 │   └── EmbeddingConfig.java         # 选择实现
 ├── parser/
 │   ├── PageText.java                # 页码 + 文本
-│   └── TextExtractor.java           # PDF/DOCX/TXT/MD 解析
+│   ├── TextExtractor.java           # PDF/DOCX/TXT/MD 解析
+│   └── TextCleaner.java             # 去页眉页脚/页码/断行/重复
 └── service/
     ├── DocumentService.java         # 上传、校验、落盘、触发索引
     ├── IndexService.java            # 异步索引编排
@@ -183,6 +185,7 @@ sequenceDiagram
     participant D as DocumentDao
     participant IS as IndexService
     participant P as TextExtractor
+    participant CL as TextCleaner
     participant CH as ChunkingService
     participant E as EmbeddingClient
     participant CD as ChunkDao
@@ -198,6 +201,8 @@ sequenceDiagram
     IS->>D: update status=1
     IS->>P: 解析文件
     P-->>IS: List<PageText>（页码+文本）
+    IS->>CL: 清洗（去页眉页脚/页码/断行/重复）
+    CL-->>IS: List<PageText>（清洗后）
     IS->>CH: 切片（700 字 / overlap 120）
     CH-->>IS: List<ChunkDraft>
     IS->>E: embedAll(切片文本)
@@ -614,7 +619,7 @@ http://localhost:8080
 | 建表 | `resources/schema.sql` |
 | 配置 | `resources/application.yml` |
 | 上传/索引 | `DocumentController`、`DocumentService`、`IndexService` |
-| 解析/切片 | `TextExtractor`、`ChunkingService` |
+| 解析/清洗/切片 | `TextExtractor`、`TextCleaner`、`ChunkingService` |
 | 向量化 | `EmbeddingClient`、`DashScopeEmbeddingClient` |
 | 检索 SQL | `ChunkDao.searchSimilar` |
 | 问答/引用 | `ChatService`、`ChatController` |

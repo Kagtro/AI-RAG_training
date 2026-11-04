@@ -35,7 +35,7 @@ mvn spring-boot:run
 |---|---|---|
 | GET | `/` | 前端页面 |
 | GET | `/api/health` | 健康检查（含数据库连通性） |
-| POST | `/api/documents` | 上传文档（pdf/docx/doc/md/txt），自动异步解析、切片、Embedding 入库 |
+| POST | `/api/documents` | 上传文档（pdf/docx/md/txt），自动异步解析、清洗、切片、Embedding 入库 |
 | GET | `/api/documents?kbId=1` | 文档列表（含 status、chunk_count） |
 | GET | `/api/documents/{id}/status` | 单个文档状态 |
 | POST | `/api/documents/{id}/reindex` | 重新解析/重建索引 |
@@ -53,6 +53,7 @@ mvn spring-boot:run
 上传 → document(status=0)
      → @Async indexAsync
      → PDFBox/POI 解析（PDF 保留页码）
+     → TextCleaner 清洗（去页眉页脚/页码/断行/重复行）
      → 按段落切片（700 字，overlap 120）
      → Embedding（批量，1024 维）
      → 写 chunk 表（vector(1024) + HNSW 索引）
