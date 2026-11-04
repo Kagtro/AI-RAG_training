@@ -10,6 +10,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +25,7 @@ import java.util.regex.Pattern;
  * 1. 检索相关片段；
  * 2. 把片段编号拼进 Prompt；
  * 3. 调大模型生成回答；
- * 4. 解析回答里的 [n] 引用，映射回具体片段。
+ * 4. 解析 / 对齐回答里的引用，映射回具体片段。
  */
 @Service
 public class ChatService {
@@ -91,8 +94,11 @@ public class ChatService {
         // 4. 调大模型
         String answer = chatClient.chat(SYSTEM_PROMPT, userPrompt);
 
-        // 5. 解析回答中的 [n]，映射回片段
-        List<Citation> citations = parseCitations(answer, chunks);
+        // 5. 引用对齐：先保留合法引用，再用回答文本补上缺失/错误的引用
+        List<Citation> citations = alignCitations(answer, chunks, parseCitations(answer, chunks));
+
+        // 6. 清掉不存在/未通过校验的引用编号，避免前端看到错误的编号
+        answer = sanitizeAnswer(answer, chunks, citations);
 
         return new ChatAnswer(question, answer, citations, chunks.size());
     }
@@ -101,10 +107,10 @@ public class ChatService {
      * 流式问答：边生成边通过 SseEmitter 推给前端。
      *
      * 事件约定（前端按事件名处理）：
-     * - meta：{"retrievedCount": N}，表示检索完成
-     * - delta：{"text": "..."}，回答的一小段
-     * - done：{"citations":[...], "retrievedCount": N}
-     * - error：{"msg": "..."}
+     * - meta：{"retrievedCount":N,"documentCount":M,"chunks":[...]} 检索完成（含片段明细）
+     * - delta：{"text":"..."} 回答的一小段
+     * - done： {"citations":[...],"retrievedCount":N,"answer":"清洗后的完整回答"}
+     * - error：{"msg":"..."}
      *
      * 注意：这个方法会阻塞（一直在读模型流），必须放到独立线程池里执行，
      * 所以 Controller 拿到 emitter 后立即返回，由 chatExecutor 执行本方法。
@@ -117,18 +123,23 @@ public class ChatService {
 
             List<RetrievedChunk> chunks = retrievalService.retrieve(kbId, question, topK, minScore);
 
-            // 没有召回：直接发拒答，不调用大模型
+            // 没有召回：也发 meta，方便前端显示"未检索到片段"
             if (chunks.isEmpty()) {
-                emitter.send(SseEmitter.event().name("delta")
-                        .data(Map.of("text", "资料中没有找到相关内容。")));
+                Map<String, Object> meta = new LinkedHashMap<>();
+                meta.put("retrievedCount", 0);
+                meta.put("documentCount", 0);
+                meta.put("chunks", List.of());
+                emitter.send(SseEmitter.event().name("meta").data(meta));
+
+                String refusal = "资料中没有找到相关内容。";
+                emitter.send(SseEmitter.event().name("delta").data(Map.of("text", refusal)));
                 emitter.send(SseEmitter.event().name("done")
-                        .data(Map.of("citations", List.of(), "retrievedCount", 0)));
+                        .data(Map.of("citations", List.of(), "retrievedCount", 0, "answer", refusal)));
                 emitter.complete();
                 return;
             }
 
-            emitter.send(SseEmitter.event().name("meta")
-                    .data(Map.of("retrievedCount", chunks.size())));
+            emitter.send(SseEmitter.event().name("meta").data(buildMeta(chunks)));
 
             String userPrompt = buildUserPrompt(question, chunks);
             StringBuilder answer = new StringBuilder();
@@ -144,10 +155,16 @@ public class ChatService {
                 }
             });
 
-            // 流结束后，再解析引用并发送 done
-            List<Citation> citations = parseCitations(answer.toString(), chunks);
-            emitter.send(SseEmitter.event().name("done")
-                    .data(Map.of("citations", citations, "retrievedCount", chunks.size())));
+            // 流结束后：对齐引用 + 清洗越界引用
+            String rawAnswer = answer.toString();
+            List<Citation> citations = alignCitations(rawAnswer, chunks, parseCitations(rawAnswer, chunks));
+            String cleanAnswer = sanitizeAnswer(rawAnswer, chunks, citations);
+
+            Map<String, Object> done = new LinkedHashMap<>();
+            done.put("citations", citations);
+            done.put("retrievedCount", chunks.size());
+            done.put("answer", cleanAnswer);
+            emitter.send(SseEmitter.event().name("done").data(done));
             emitter.complete();
         } catch (Exception e) {
             log.error("流式问答失败", e);
@@ -161,7 +178,8 @@ public class ChatService {
         }
     }
 
-    private String buildUserPrompt(String question, List<RetrievedChunk> chunks) {        StringBuilder sb = new StringBuilder();
+    private String buildUserPrompt(String question, List<RetrievedChunk> chunks) {
+        StringBuilder sb = new StringBuilder();
         sb.append("【资料】（共 ").append(chunks.size()).append(" 条，引用编号只能是 1~")
                 .append(chunks.size()).append("）\n");
         for (int i = 0; i < chunks.size(); i++) {
@@ -173,6 +191,31 @@ public class ChatService {
         }
         sb.append("【问题】\n").append(question).append('\n');
         return sb.toString();
+    }
+
+    /** meta 事件：片段数、来源文档数、每个片段的摘要（前端展示检索详情用） */
+    private Map<String, Object> buildMeta(List<RetrievedChunk> chunks) {
+        Set<String> files = new LinkedHashSet<>();
+        List<Map<String, Object>> infos = new ArrayList<>();
+        for (int i = 0; i < chunks.size(); i++) {
+            RetrievedChunk chunk = chunks.get(i);
+            files.add(chunk.fileName());
+
+            Map<String, Object> info = new LinkedHashMap<>();
+            info.put("index", i + 1);
+            info.put("chunkId", chunk.chunkId());
+            info.put("fileName", chunk.fileName());
+            info.put("pageNo", chunk.pageNo());
+            info.put("score", Math.round(chunk.score() * 1000) / 1000.0);
+            info.put("snippet", snippet(chunk.content(), 200));
+            infos.add(info);
+        }
+
+        Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("retrievedCount", chunks.size());
+        meta.put("documentCount", files.size());
+        meta.put("chunks", infos);
+        return meta;
     }
 
     /**
@@ -190,13 +233,149 @@ public class ChatService {
         }
         List<Citation> citations = new ArrayList<>();
         for (Integer index : indexes) {
-            RetrievedChunk chunk = chunks.get(index - 1);
-            String snippet = chunk.content().length() <= 120
-                    ? chunk.content()
-                    : chunk.content().substring(0, 120) + "...";
-            citations.add(new Citation(index, chunk.chunkId(), chunk.fileName(),
-                    chunk.pageNo(), chunk.score(), snippet));
+            citations.add(toCitation(index, chunks.get(index - 1)));
         }
         return citations;
+    }
+
+    /**
+     * 引用对齐（后处理，不调模型）：
+     * 1. 模型给出的合法引用先保留；
+     * 2. 如果引用缺失/被过滤，用"回答文本"和每个片段的字符二元组重合度找最相关的 1~2 个片段补上。
+     *
+     * 这解决的是：模型写 [10]（法条编号）被过滤后引用为空，
+     * 或者引用了错误的片段编号。
+     */
+    private List<Citation> alignCitations(String answer,
+                                          List<RetrievedChunk> chunks,
+                                          List<Citation> parsed) {
+        if (answer == null || chunks == null || chunks.isEmpty()) {
+            return parsed;
+        }
+        // 拒答类回答不要强行挂引用
+        if (answer.contains("资料中没有相关信息") || answer.contains("未找到")) {
+            return parsed;
+        }
+
+        List<Citation> result = new ArrayList<>();
+        Set<Long> citedIds = new HashSet<>();
+        Set<String> citedFiles = new HashSet<>();
+
+        Set<String> answerGrams = bigrams(answer);
+        if (answerGrams.isEmpty()) {
+            return result;
+        }
+
+        record ScoredChunk(int index, RetrievedChunk chunk, double score) {
+        }
+
+        List<ScoredChunk> scored = new ArrayList<>();
+        for (int i = 0; i < chunks.size(); i++) {
+            RetrievedChunk chunk = chunks.get(i);
+            Set<String> chunkGrams = bigrams(chunk.content());
+            int overlap = 0;
+            for (String gram : answerGrams) {
+                if (chunkGrams.contains(gram)) {
+                    overlap++;
+                }
+            }
+            double score = (double) overlap / answerGrams.size();
+            scored.add(new ScoredChunk(i + 1, chunk, score));
+        }
+
+        scored.sort(Comparator.comparingDouble(ScoredChunk::score).reversed());
+
+        Map<Long, Double> scoreByChunkId = new java.util.HashMap<>();
+        for (ScoredChunk item : scored) {
+            scoreByChunkId.put(item.chunk().chunkId(), item.score());
+        }
+
+        double bestScore = scored.isEmpty() ? 0 : scored.get(0).score();
+
+        // 先校验模型自己给的引用：和回答内容几乎不重合的，说明引错了，丢掉
+        double parsedThreshold = Math.max(0.12, bestScore * 0.25);
+        for (Citation citation : parsed) {
+            double relevance = scoreByChunkId.getOrDefault(citation.chunkId(), 0.0);
+            if (relevance >= parsedThreshold) {
+                result.add(citation);
+                citedIds.add(citation.chunkId());
+                citedFiles.add(citation.fileName());
+            }
+        }
+
+        double threshold = Math.max(0.15, bestScore * 0.60);
+        int maxAdd = 2;
+        int added = 0;
+
+        for (ScoredChunk item : scored) {
+            if (added >= maxAdd) {
+                break;
+            }
+            if (item.score() < threshold) {
+                break;
+            }
+            if (citedIds.contains(item.chunk().chunkId())) {
+                continue;
+            }
+            // 同一文件只补一个片段，避免同一文档塞一堆引用；跨文档题会补到不同文件
+            if (citedFiles.contains(item.chunk().fileName())) {
+                continue;
+            }
+            result.add(toCitation(item.index(), item.chunk()));
+            citedIds.add(item.chunk().chunkId());
+            citedFiles.add(item.chunk().fileName());
+            added++;
+        }
+        return result;
+    }
+
+    /** 把文本切成中文二元组，用于粗略计算"回答和片段有多像" */
+    private Set<String> bigrams(String text) {
+        String normalized = text
+                .replaceAll("\\s+", "")
+                .replaceAll("[，。；：！？、（）【】《》\"'“”‘’*.,;:!?()\\[\\]{}<>/\\\\|-]", "");
+        Set<String> grams = new HashSet<>();
+        for (int i = 0; i + 1 < normalized.length(); i++) {
+            grams.add(normalized.substring(i, i + 2));
+        }
+        return grams;
+    }
+
+    /** 把片段转成 Citation，index 从 1 开始 */
+    private Citation toCitation(int index, RetrievedChunk chunk) {
+        return new Citation(index, chunk.chunkId(), chunk.fileName(),
+                chunk.pageNo(), chunk.score(), snippet(chunk.content(), 120));
+    }
+
+    /** 删除不存在/未通过对齐校验的引用编号，例如资料只有 5 条时清掉 [10] */
+    private String sanitizeAnswer(String answer, List<RetrievedChunk> chunks, List<Citation> citations) {
+        if (answer == null || answer.isEmpty()) {
+            return "";
+        }
+        Set<Integer> allowed = new LinkedHashSet<>();
+        for (Citation citation : citations) {
+            allowed.add(citation.index());
+        }
+
+        Matcher matcher = CITATION_PATTERN.matcher(answer);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            int index = Integer.parseInt(matcher.group(1));
+            if (index >= 1 && index <= chunks.size() && allowed.contains(index)) {
+                matcher.appendReplacement(sb, "[" + index + "]");
+            } else {
+                matcher.appendReplacement(sb, "");
+            }
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    private String snippet(String content, int maxLength) {
+        if (content == null) {
+            return "";
+        }
+        String oneLine = content.replaceAll("\\s+", " ").trim();
+        return oneLine.length() <= maxLength ? oneLine : oneLine.substring(0, maxLength) + "...";
     }
 }
