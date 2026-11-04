@@ -117,7 +117,7 @@ flowchart TB
 | 包/目录 | 职责 | 说明 |
 |---|---|---|
 | `controller/` | HTTP 接口 | 只做参数接收、调用 Service、返回结果；不写业务 |
-| `service/` | 业务编排 | DocumentService（上传）、IndexService（索引）、RetrievalService（检索）、ChatService（问答） |
+| `service/` | 业务编排 | DocumentService（上传）、IndexService（索引）、QueryDecompositionService（查询拆解）、RetrievalService（检索）、ChatService（问答） |
 | `parser/` | 文档解析与清洗 | PDFBox 解析 PDF（按页），POI 解析 DOCX（含表格）；TextCleaner 去页眉页脚/页码/断行 |
 | `chunk/` | 文本切片 | 段落优先 + 滑动窗口 + overlap |
 | `embedding/` | 向量化 | 接口 + 百炼实现 + Mock 实现 + 选择配置 |
@@ -163,11 +163,12 @@ src/main/java/com/kagtro/rag/
 │   ├── PageText.java                # 页码 + 文本
 │   ├── TextExtractor.java           # PDF/DOCX/TXT/MD 解析
 │   └── TextCleaner.java             # 去页眉页脚/页码/断行/重复
-└── service/
-    ├── DocumentService.java         # 上传、校验、落盘、触发索引
-    ├── IndexService.java            # 异步索引编排
-    ├── RetrievalService.java        # 向量检索 + 结果转换
-    └── ChatService.java             # Prompt、生成、引用解析、流式
+├── service/
+│   ├── DocumentService.java         # 上传、校验、落盘、触发索引
+│   ├── IndexService.java            # 异步索引编排
+│   ├── QueryDecompositionService.java # 多意图查询拆解
+│   ├── RetrievalService.java        # 向量检索/多子查询召回 + RRF
+│   └── ChatService.java             # Prompt、生成、引用解析、流式
 ```
 
 ---
@@ -258,6 +259,14 @@ limit :topK
 - `kb_id`：检索范围隔离；
 - `status = 2`：只搜解析成功的文档；
 - 阈值过滤：相似度太低直接丢弃，作为拒答的第一道防线。
+
+**查询拆解（多意图）**：
+
+- `QueryDecompositionService` 先做低成本多意图判断，只有出现"分别/各自/以及/和/与"等信号时才调用 LLM；
+- LLM 输出 2~3 个子问题；失败时退回规则拆分；
+- `RetrievalService.retrieveWithDecomposition` 对每个子问题独立召回 topK；
+- 用 RRF（`1/(60+rank)`）融合去重，再取最终 topK；
+- 简单问题不拆解，保持原单查询行为。
 
 ### 5.3 问答链路（含流式）
 
@@ -463,6 +472,7 @@ SSE 事件：
 | `rag.chunk-overlap` | 120 | 相邻切片重叠 |
 | `rag.top-k` | 5 | 召回数量 |
 | `rag.score-threshold` | 0.1 | 阈值；**真实 Embedding 下偏低，需用评测集调到 0.4~0.6** |
+| `rag.query-decomposition-enabled` | true | 多意图查询拆解开关 |
 | `ai.embedding-dimension` | 1024 | text-embedding-v3 维度 |
 | `ai.temperature` | 0.2 | 生成温度 |
 | `ai.max-tokens` | 800 | 回答最大长度 |

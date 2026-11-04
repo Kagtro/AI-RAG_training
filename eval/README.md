@@ -98,7 +98,7 @@ select category, count(*) from eval_case group by category;
 
 实现：`EvalController` → `EvalService` → `EvalDao`，逐题执行：
 
-1. 调检索，判断期望文档是否进前 K → `recallAtK` / `crossRecallAtK`；
+1. 调检索（含多意图查询拆解），判断期望文档是否进前 K → `recallAtK` / `crossRecallAtK`；
 2. 调问答，拿回答 + 引用；
 3. 关键词命中 → `answerAccuracy`；
 4. 引用文件是否覆盖期望文档 → `groundedness`（衡量答案有没有"脱稿"）；
@@ -106,19 +106,19 @@ select category, count(*) from eval_case group by category;
 6. 记录检索/回答/总耗时 → `p95LatencyMs` / `avgLatencyMs`；
 7. 写 `eval/report-时间.csv`（已 gitignore）。
 
-首轮结果（`topK=8, minScore=0.1`）：
+当前结果（`topK=8, minScore=0.1`，开启查询拆解）：
 
 | 指标 | 结果 |
 |---|---|
 | Recall@8（可答 21 题） | 1.0 |
-| 跨文档召回（5 题） | 0.8 |
+| 跨文档召回（5 题） | 1.0 |
 | 关键词正确率（26 题） | 1.0 |
 | 拒答准确率（4 题） | 1.0 |
-| 引用覆盖率（groundedness） | 0.54 |
-| P95 延迟 | 5.9s |
-| 平均延迟 | 2.3s |
+| 引用覆盖率（groundedness） | 1.0 |
+| P95 延迟 | 9.2s |
+| 平均延迟 | 2.7s |
 
-> `answerAccuracy` 是关键词粗筛；`groundedness` 偏低说明**引用不可靠**（模型有时写法条编号 `[10]`，超出片段范围被丢弃）。下一步应优化引用格式/后处理，并以人工抽检为准。
+> 开启查询拆解后跨文档召回从 0.8 提升到 1.0，但 P95 延迟上升（多一次拆解调用 + 多次检索）。可用 `rag.query-decomposition-enabled=false` 做 A/B 对比。
 
 ## 7. 注意事项
 

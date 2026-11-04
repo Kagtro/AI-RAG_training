@@ -64,7 +64,7 @@ mvn spring-boot:run
 ### 检索（读）
 
 ```
-问题 → Embedding → pgvector 余弦检索 topK → 阈值过滤 → 片段
+问题 → 多意图？查询拆解 → 子问题各自 Embedding/向量召回 → RRF 融合去重 → 阈值/topK → 片段
 ```
 
 ### 问答（生成）
