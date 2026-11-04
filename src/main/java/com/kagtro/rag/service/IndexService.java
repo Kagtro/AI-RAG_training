@@ -6,6 +6,7 @@ import com.kagtro.rag.dao.ChunkDao;
 import com.kagtro.rag.dao.DocumentDao;
 import com.kagtro.rag.embedding.EmbeddingClient;
 import com.kagtro.rag.parser.PageText;
+import com.kagtro.rag.parser.TextCleaner;
 import com.kagtro.rag.parser.TextExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,17 +25,20 @@ public class IndexService {
     private final DocumentDao documentDao;
     private final ChunkDao chunkDao;
     private final TextExtractor textExtractor;
+    private final TextCleaner textCleaner;
     private final ChunkingService chunkingService;
     private final EmbeddingClient embeddingClient;
 
     public IndexService(DocumentDao documentDao,
                         ChunkDao chunkDao,
                         TextExtractor textExtractor,
+                        TextCleaner textCleaner,
                         ChunkingService chunkingService,
                         EmbeddingClient embeddingClient) {
         this.documentDao = documentDao;
         this.chunkDao = chunkDao;
         this.textExtractor = textExtractor;
+        this.textCleaner = textCleaner;
         this.chunkingService = chunkingService;
         this.embeddingClient = embeddingClient;
     }
@@ -59,7 +63,7 @@ public class IndexService {
             String filePath = String.valueOf(doc.get("file_path"));
             String fileType = String.valueOf(doc.get("file_type"));
 
-            List<PageText> pages = textExtractor.extract(Path.of(filePath), fileType);
+            List<PageText> pages = textCleaner.clean(textExtractor.extract(Path.of(filePath), fileType));
             List<ChunkDraft> chunks = chunkingService.chunk(pages);
             if (chunks.isEmpty()) {
                 throw new IllegalStateException("没有解析出文本，可能是扫描版 PDF（暂不支持 OCR）");

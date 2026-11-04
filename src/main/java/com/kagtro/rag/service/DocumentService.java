@@ -42,7 +42,7 @@ public class DocumentService {
         if (dot >= 0) {
             ext = originalName.substring(dot + 1).toLowerCase();
         }
-        if (!List.of("pdf", "docx", "doc", "md", "txt").contains(ext)) {
+        if (!List.of("pdf", "docx", "md", "txt").contains(ext)) {
             throw new IllegalArgumentException("暂不支持的文件类型: " + ext);
         }
 

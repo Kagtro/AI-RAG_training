@@ -90,7 +90,7 @@ COMMENT ON COLUMN document.id IS '主键';
 COMMENT ON COLUMN document.kb_id IS '所属知识库 id';
 COMMENT ON COLUMN document.file_name IS '原始文件名';
 COMMENT ON COLUMN document.file_path IS '服务器上的存储路径';
-COMMENT ON COLUMN document.file_type IS '文件类型：pdf/docx/doc/md/txt';
+COMMENT ON COLUMN document.file_type IS '文件类型：pdf/docx/md/txt';
 COMMENT ON COLUMN document.status IS '解析状态：0待解析 1解析中 2已就绪 3失败';
 COMMENT ON COLUMN document.error_msg IS '失败原因（status=3 时有值）';
 COMMENT ON COLUMN document.chunk_count IS '切片数量';
