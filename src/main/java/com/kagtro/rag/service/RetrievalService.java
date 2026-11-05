@@ -132,23 +132,53 @@ public class RetrievalService {
         Map<Long, RetrievedChunk> bestByChunkId = new LinkedHashMap<>();
         Map<Long, Double> rrfScores = new HashMap<>();
         Map<Long, Set<String>> channels = new HashMap<>();
+        List<RetrievedChunk> mustInclude = new ArrayList<>();
 
         for (String query : effectiveQueries) {
             // 通道 1：向量召回
-            addRanked(retrieve(kbId, query, k, score), "vector", rrfScores, bestByChunkId, channels);
+            List<RetrievedChunk> vectorList = retrieve(kbId, query, k, score);
+            addRanked(vectorList, "vector", rrfScores, bestByChunkId, channels);
+            if (!vectorList.isEmpty() && mustInclude.stream()
+                    .noneMatch(c -> c.chunkId() == vectorList.get(0).chunkId())) {
+                mustInclude.add(vectorList.get(0));
+            }
 
             // 通道 2：BM25 词法召回（中文按字符二元组）
             if (hybridEnabled) {
-                addRanked(bm25Retriever.search(kbId, query, k), "bm25",
-                        rrfScores, bestByChunkId, channels);
+                List<RetrievedChunk> bm25List = bm25Retriever.search(kbId, query, k);
+                addRanked(bm25List, "bm25", rrfScores, bestByChunkId, channels);
+                if (!bm25List.isEmpty() && mustInclude.stream()
+                        .noneMatch(c -> c.chunkId() == bm25List.get(0).chunkId())) {
+                    mustInclude.add(bm25List.get(0));
+                }
             }
         }
 
-        List<RetrievedChunk> merged = rrfScores.entrySet().stream()
+        int finalLimit = Math.max(k, mustInclude.size());
+        List<RetrievedChunk> merged = new ArrayList<>(rrfScores.entrySet().stream()
                 .sorted(Map.Entry.<Long, Double>comparingByValue(Comparator.reverseOrder()))
-                .limit(k)
+                .limit(finalLimit)
                 .map(entry -> withSource(bestByChunkId.get(entry.getKey()), channels.get(entry.getKey())))
-                .toList();
+                .toList());
+
+        // 多意图覆盖：确保每个子查询的向量/BM25 第一名都进候选
+        Set<Long> selectedIds = new LinkedHashSet<>();
+        for (RetrievedChunk chunk : merged) {
+            selectedIds.add(chunk.chunkId());
+        }
+        for (RetrievedChunk required : mustInclude) {
+            if (required == null || selectedIds.contains(required.chunkId())) {
+                continue;
+            }
+            if (merged.size() >= finalLimit && !merged.isEmpty()) {
+                RetrievedChunk removed = merged.remove(merged.size() - 1);
+                selectedIds.remove(removed.chunkId());
+            }
+            RetrievedChunk chunk = withSource(bestByChunkId.get(required.chunkId()),
+                    channels.get(required.chunkId()));
+            merged.add(chunk);
+            selectedIds.add(chunk.chunkId());
+        }
 
         return new RetrievalResult(merged, effectiveQueries);
     }

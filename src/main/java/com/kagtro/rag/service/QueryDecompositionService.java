@@ -27,12 +27,16 @@ public class QueryDecompositionService {
 
     private static final String SYSTEM_PROMPT = """
             你是问题拆解器。判断用户问题是否包含多个需要分别回答的子问题。
-            - 如果有，拆成 2~3 个独立、完整、适合检索的中文子问题；
+            - 如果有，拆成 2~3 个独立、适合检索的中文子问题；
+            - 子问题要简洁，保留核心关键词，不要重复问题里的背景描述；
             - 如果没有，输出空数组；
             - 只输出 JSON 字符串数组，不要解释、不要 Markdown 代码块。
-            示例：
+            示例 1：
             输入：单位录用职工后，签订书面劳动合同和办理公积金缴存登记的时限分别是多久？
-            输出：["签订书面劳动合同的法定时限是多久？","办理住房公积金缴存登记的法定时限是多久？"]
+            输出：["签订书面劳动合同的法定时限","办理住房公积金缴存登记的法定时限"]
+            示例 2：
+            输入：劳动合同终止时，工资何时结清、经济补偿怎么算、公积金账户怎么办？
+            输出：["工资结清时限","经济补偿计算标准","公积金账户转移封存"]
             """;
 
     private static final int MAX_SUB_QUERIES = 3;
@@ -91,6 +95,24 @@ public class QueryDecompositionService {
     private boolean looksMultiIntent(String question) {
         if (question.contains("分别") || question.contains("各自") || question.contains("以及")) {
             return true;
+        }
+        // 两个问句（两个问号）通常包含两个子问题
+        long questionMarks = question.chars().filter(c -> c == '？' || c == '?').count();
+        if (questionMarks >= 2) {
+            return true;
+        }
+        // "A何时…、B怎么…、C怎么办" 这类用顿号并列多个疑问
+        if (question.contains("、")) {
+            String[] markers = {"何时", "怎么", "如何", "怎么办", "谁", "多少", "哪些", "哪一", "是否", "多久", "什么"};
+            int count = 0;
+            for (String marker : markers) {
+                if (question.contains(marker)) {
+                    count++;
+                }
+            }
+            if (count >= 2) {
+                return true;
+            }
         }
         // "和/与" 作为连接词时，且问题不算短，才认为可能多意图
         return question.length() >= 12 && (question.contains("和") || question.contains("与"));

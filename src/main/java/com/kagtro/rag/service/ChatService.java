@@ -40,9 +40,23 @@ public class ChatService {
             你是一个严谨的企业知识库助手。请遵守以下规则：
             1. 只依据【资料】中的内容回答，不要使用资料以外的知识。
             2. 每个事实后用 [编号] 标注来源；编号只能是资料片段序号（从 1 开始，最大不超过资料条数），不要写法律条款号，也不要用不存在的编号。
-            3. 如果【资料】不足以回答问题，直接回答"资料中没有相关信息"，不要猜测。
+            3. 如果【资料】完全没有相关规则，直接回答"资料中没有相关信息"，不要猜测。
             4. 用简洁、准确的中文回答，不要输出与问题无关的内容。
             5. 如果问题包含多个子问题，请分别回答，不要把不同子问题合并成同一个结论。
+            6. 如果资料给出了认定/排除条件，而题目描述的事实明显不符合这些条件，应回答"不属于/不得认定/不视同"并说明不符合哪项条件，不要回答"资料中没有相关信息"。
+            7. 如果资料有相关规则，但没有直接规定问题所问的事项，回答"资料中没有明确规定"，不要用法理、常识或外部知识推断。
+            示例 1（否定结论）：
+            资料：第十四条 职工有下列情形之一的，应当认定为工伤：在工作时间和工作场所内，因工作原因受到事故伤害的……
+            问题：职工周末在家休息时受伤，算不算工伤？
+            回答：不属于工伤。因为不符合工作时间、工作场所、工作原因等条件。
+            示例 2（标签场景）：
+            资料：第十四条 职工有下列情形之一的，应当认定为工伤：在工作时间和工作场所内，因工作原因受到事故伤害的……
+            问题：职工在单位宿舍休息时受伤，算不算工伤？
+            回答：不属于工伤。因为宿舍休息不属于在工作时间、工作场所内因工作原因受到事故伤害。
+            示例 3（资料未直接规定）：
+            资料：停工留薪期内原工资福利待遇不变，由所在单位按月支付；职工累计工作满 1 年不满 10 年的，年休假 5 天……
+            问题：工伤职工在停工留薪期内能否享受年休假？
+            回答：资料中没有明确规定。
             """;
 
     /** 匹配回答里的引用标记，例如 [1]、[2] */
@@ -97,7 +111,8 @@ public class ChatService {
         String answer = chatClient.chat(SYSTEM_PROMPT, userPrompt);
 
         // 5. 引用对齐：先保留合法引用，再用回答文本补上缺失/错误的引用
-        List<Citation> citations = alignCitations(answer, chunks, parseCitations(answer, chunks));
+        List<Citation> citations = alignCitations(answer, chunks,
+                parseCitations(answer, chunks), retrieval.queries());
 
         // 6. 清掉不存在/未通过校验的引用编号，避免前端看到错误的编号
         answer = sanitizeAnswer(answer, chunks, citations);
@@ -162,7 +177,8 @@ public class ChatService {
 
             // 流结束后：对齐引用 + 清洗越界引用
             String rawAnswer = answer.toString();
-            List<Citation> citations = alignCitations(rawAnswer, chunks, parseCitations(rawAnswer, chunks));
+            List<Citation> citations = alignCitations(rawAnswer, chunks,
+                    parseCitations(rawAnswer, chunks), retrieval.queries());
             String cleanAnswer = sanitizeAnswer(rawAnswer, chunks, citations);
 
             Map<String, Object> done = new LinkedHashMap<>();
@@ -255,7 +271,8 @@ public class ChatService {
      */
     private List<Citation> alignCitations(String answer,
                                           List<RetrievedChunk> chunks,
-                                          List<Citation> parsed) {
+                                          List<Citation> parsed,
+                                          List<String> queries) {
         if (answer == null || chunks == null || chunks.isEmpty()) {
             return parsed;
         }
@@ -307,6 +324,47 @@ public class ChatService {
                 result.add(citation);
                 citedIds.add(citation.chunkId());
                 citedFiles.add(citation.fileName());
+            }
+        }
+
+        // 多子问题时，确保每个子问题至少有一个来源被引用（选择该子查询最匹配且答案有涉及的片段）
+        if (queries != null && queries.size() > 1) {
+            for (String query : queries) {
+                if (result.size() >= 6) {
+                    break;
+                }
+                Set<String> queryGrams = bigrams(query);
+                int bestIndex = -1;
+                RetrievedChunk bestChunk = null;
+                double bestQueryScore = 0;
+                for (int i = 0; i < chunks.size(); i++) {
+                    RetrievedChunk chunk = chunks.get(i);
+                    if (citedIds.contains(chunk.chunkId()) || citedFiles.contains(chunk.fileName())) {
+                        continue;
+                    }
+                    Double answerScore = scoreByChunkId.get(chunk.chunkId());
+                    if (answerScore == null || answerScore < 0.08) {
+                        continue;
+                    }
+                    Set<String> chunkGrams = bigrams(chunk.content());
+                    int overlap = 0;
+                    for (String gram : queryGrams) {
+                        if (chunkGrams.contains(gram)) {
+                            overlap++;
+                        }
+                    }
+                    double queryScore = queryGrams.isEmpty() ? 0 : (double) overlap / queryGrams.size();
+                    if (queryScore > bestQueryScore) {
+                        bestQueryScore = queryScore;
+                        bestChunk = chunk;
+                        bestIndex = i + 1;
+                    }
+                }
+                if (bestChunk != null && bestQueryScore >= 0.10) {
+                    result.add(toCitation(bestIndex, bestChunk));
+                    citedIds.add(bestChunk.chunkId());
+                    citedFiles.add(bestChunk.fileName());
+                }
             }
         }
 
