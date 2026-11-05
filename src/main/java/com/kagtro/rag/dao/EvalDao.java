@@ -20,7 +20,7 @@ public class EvalDao {
 
     public List<Map<String, Object>> findAll() {
         return jdbcClient.sql("""
-                        select id, kb_id, question, ground_truth, doc_ids, keywords, category
+                        select id, kb_id, question, ground_truth, doc_ids, optional_files, keywords, difficulty, category
                         from eval_case
                         order by id
                         """)

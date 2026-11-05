@@ -1,31 +1,151 @@
-﻿id,category,question,ground_truth,expected_files,keywords
-1,answerable,三年以上固定期限的劳动合同，试用期最长可以约定多久？,六个月（6个月）。,01_labor_contract_law.txt,六个月
-2,answerable,劳动者在试用期的工资不得低于劳动合同约定工资的多少？,不得低于劳动合同约定工资的百分之八十（80%），并且不得低于用人单位所在地的最低工资标准。,01_labor_contract_law.txt,百分之八十;80%
-3,answerable,建立劳动关系后，最迟应当在多长时间内订立书面劳动合同？,自用工之日起一个月内。,01_labor_contract_law.txt,一个月
-4,answerable,劳动者提前多久书面通知用人单位可以解除劳动合同？试用期内提前多久？,提前三十日；试用期内提前三日。,01_labor_contract_law.txt,三十日;三日
-5,answerable,解除或终止劳动合同的经济补偿，按工作年限怎么计算？,每满一年支付一个月工资；六个月以上不满一年的按一年计算；不满六个月的支付半个月工资。,01_labor_contract_law.txt,一个月;六个月;半个月
-6,answerable,竞业限制期限最长不得超过多久？,二年。,01_labor_contract_law.txt,二年
-7,answerable,领取基本养老金需要累计缴费满多少年？,累计缴费满十五年（15年）。,02_social_insurance_law.txt,十五年
-8,answerable,工伤保险费用由谁缴纳？,由用人单位缴纳工伤保险费，职工不缴纳。,02_social_insurance_law.txt,用人单位;不缴纳
-9,answerable,领取失业保险金需要满足哪些条件？,失业前用人单位和本人已经缴纳失业保险费满一年；非因本人意愿中断就业；已经办理失业登记并有求职要求。,02_social_insurance_law.txt,满一年;非因本人意愿;失业登记
-10,answerable,职工累计工作满1年不满10年的，年休假多少天？,5天。,03_annual_leave_regulation.txt,5天
-11,answerable,职工累计工作满10年不满20年的，年休假多少天？,10天。,03_annual_leave_regulation.txt,10天
-12,answerable,单位未安排年休假，应休未休天数按什么标准支付工资报酬？,按该职工日工资收入的300%支付年休假工资报酬。,03_annual_leave_regulation.txt,300%
-13,answerable,单位应当在事故伤害发生之日起多少日内提出工伤认定申请？,30日内。,04_work_injury_regulation.txt,30日
-14,answerable,单位未申请工伤认定，职工或其近亲属可以在多长时间内直接申请？,1年内。,04_work_injury_regulation.txt,1年
-15,answerable,停工留薪期一般不超过多久？可以延长多久？,一般不超过12个月；伤情严重或情况特殊，经劳动能力鉴定委员会确认可以适当延长，但延长不得超过12个月。,04_work_injury_regulation.txt,12个月
-16,answerable,单位录用职工后，应当在多长时间内办理住房公积金缴存登记？,自录用之日起30日内。,05_housing_fund_regulation.txt,30日
-17,answerable,住房公积金缴存比例的下限是多少？,职工和单位住房公积金的缴存比例均不得低于5%。,05_housing_fund_regulation.txt,5%
-18,answerable,职工在哪些情形下可以提取住房公积金？,包括支付房租、购买/建造/翻建/大修自住住房、偿还购房贷款本息、装修自住住房、支付自住住房物业费、离休退休、完全丧失劳动能力并与单位终止劳动关系、出境定居等。,05_housing_fund_regulation.txt,房租;购买;退休;出境定居
-19,answerable,工资至少多长时间支付一次？,工资至少每月支付一次。,06_wage_payment_regulation.txt,每月
-20,answerable,解除或终止劳动合同时，工资应当在什么时候结清？,在解除或终止劳动合同时一次付清劳动者工资。,06_wage_payment_regulation.txt,一次付清
-21,answerable,法定休假日安排劳动者工作的，支付不低于工资的百分之多少？,不低于工资的300%（百分之三百）。,06_wage_payment_regulation.txt,300%;百分之三百
-22,cross_doc,单位录用职工后，签订书面劳动合同和办理住房公积金缴存登记的法定时限分别是多久？,书面劳动合同：自用工之日起一个月内；住房公积金缴存登记：自录用之日起30日内。,01_labor_contract_law.txt;05_housing_fund_regulation.txt,一个月;30日
-23,cross_doc,职工因工受伤停工留薪期间，工资由谁支付？工伤保险费用又由谁缴纳？,停工留薪期内原工资福利待遇不变，由所在单位按月支付；工伤保险费由用人单位缴纳，职工不缴纳。,04_work_injury_regulation.txt;02_social_insurance_law.txt,所在单位;用人单位;不缴纳
-24,cross_doc,未休年休假的300%工资报酬，和法定节假日加班的300%工资，是同一回事吗？,不是。未休年假按日工资收入的300%支付年休假工资报酬（年休假条例）；法定休假日加班按不低于工资的300%支付加班费（工资支付暂行规定），两者依据和适用情形不同。,03_annual_leave_regulation.txt;06_wage_payment_regulation.txt,不是;年休假;加班费
-25,cross_doc,解除劳动合同时，工资什么时候结清？经济补偿又怎么计算？,工资在解除或终止劳动合同时一次付清；经济补偿按工作年限每满一年支付一个月工资，六个月以上不满一年按一年计算，不满六个月支付半个月工资。,06_wage_payment_regulation.txt;01_labor_contract_law.txt,一次付清;一个月;半个月
-26,cross_doc,养老保险累计缴费满15年，和年休假天数按累计工作年限计算，是同一个“年限”概念吗？,不是。15年是领取基本养老金的最低累计缴费年限；年休假天数按职工累计工作年限分档：满1年不满10年5天、满10年不满20年10天、满20年15天。,02_social_insurance_law.txt;03_annual_leave_regulation.txt,不是;15年;5天;10天;15天
-27,unanswerable,2026年上海市社保缴费基数的上下限分别是多少？,资料中没有相关信息。,,没有
-28,unanswerable,住房公积金贷款的最高额度是多少？,资料中没有相关信息。,,没有
-29,unanswerable,当前住房公积金贷款的利率是多少？,资料中没有相关信息。,,没有
-30,unanswerable,加班费是否计入社保缴费基数？,资料中没有相关信息。,,没有
+﻿id,category,question,ground_truth,expected_files,optional_files,keywords,difficulty
+1,answerable,三年以上固定期限的劳动合同，试用期最长可以约定多久？,六个月（6个月）。,01_labor_contract_law.txt,,六个月,easy
+2,answerable,劳动者在试用期的工资不得低于劳动合同约定工资的多少？,不得低于劳动合同约定工资的百分之八十（80%），并且不得低于用人单位所在地的最低工资标准。,01_labor_contract_law.txt,,百分之八十;80%,easy
+3,answerable,建立劳动关系后，最迟应当在多长时间内订立书面劳动合同？,自用工之日起一个月内。,01_labor_contract_law.txt,,一个月,easy
+4,answerable,劳动者提前多久书面通知用人单位可以解除劳动合同？试用期内提前多久？,提前三十日；试用期内提前三日。,01_labor_contract_law.txt,,三十日;三日,easy
+5,answerable,解除或终止劳动合同的经济补偿，按工作年限怎么计算？,每满一年支付一个月工资；六个月以上不满一年的按一年计算；不满六个月的支付半个月工资。,01_labor_contract_law.txt,,一个月;六个月;半个月,easy
+6,answerable,竞业限制期限最长不得超过多久？,二年。,01_labor_contract_law.txt,,二年,easy
+7,answerable,领取基本养老金需要累计缴费满多少年？,累计缴费满十五年（15年）。,02_social_insurance_law.txt,,十五年,easy
+8,answerable,工伤保险费用由谁缴纳？,由用人单位缴纳工伤保险费，职工不缴纳。,02_social_insurance_law.txt,,用人单位;不缴纳,easy
+9,answerable,领取失业保险金需要满足哪些条件？,失业前用人单位和本人已经缴纳失业保险费满一年；非因本人意愿中断就业；已经办理失业登记并有求职要求。,02_social_insurance_law.txt,,满一年;非因本人意愿;失业登记,easy
+10,answerable,职工累计工作满1年不满10年的，年休假多少天？,5天。,03_annual_leave_regulation.txt,,5天,easy
+11,answerable,职工累计工作满10年不满20年的，年休假多少天？,10天。,03_annual_leave_regulation.txt,,10天,easy
+12,answerable,单位未安排年休假，应休未休天数按什么标准支付工资报酬？,按该职工日工资收入的300%支付年休假工资报酬。,03_annual_leave_regulation.txt,,300%,easy
+13,answerable,单位应当在事故伤害发生之日起多少日内提出工伤认定申请？,30日内。,04_work_injury_regulation.txt,,30日,easy
+14,answerable,单位未申请工伤认定，职工或其近亲属可以在多长时间内直接申请？,1年内。,04_work_injury_regulation.txt,,1年,easy
+15,answerable,停工留薪期一般不超过多久？可以延长多久？,一般不超过12个月；伤情严重或情况特殊，经劳动能力鉴定委员会确认可以适当延长，但延长不得超过12个月。,04_work_injury_regulation.txt,,12个月,easy
+16,answerable,单位录用职工后，应当在多长时间内办理住房公积金缴存登记？,自录用之日起30日内。,05_housing_fund_regulation.txt,,30日,easy
+17,answerable,住房公积金缴存比例的下限是多少？,职工和单位住房公积金的缴存比例均不得低于5%。,05_housing_fund_regulation.txt,,5%,easy
+18,answerable,职工在哪些情形下可以提取住房公积金？,包括支付房租、购买/建造/翻建/大修自住住房、偿还购房贷款本息、装修自住住房、支付自住住房物业费、离休退休、完全丧失劳动能力并与单位终止劳动关系、出境定居等。,05_housing_fund_regulation.txt,,房租;购买;退休;出境定居,easy
+19,answerable,工资至少多长时间支付一次？,工资至少每月支付一次。,06_wage_payment_regulation.txt,,每月,easy
+20,answerable,解除或终止劳动合同时，工资应当在什么时候结清？,在解除或终止劳动合同时一次付清劳动者工资。,06_wage_payment_regulation.txt,,一次付清,easy
+21,answerable,法定休假日安排劳动者工作的，支付不低于工资的百分之多少？,不低于工资的300%（百分之三百）。,06_wage_payment_regulation.txt,,300%;百分之三百,easy
+22,cross_doc,单位录用职工后，签订书面劳动合同和办理住房公积金缴存登记的法定时限分别是多久？,书面劳动合同：自用工之日起一个月内；住房公积金缴存登记：自录用之日起30日内。,01_labor_contract_law.txt;05_housing_fund_regulation.txt,,一个月;30日,easy
+23,cross_doc,职工因工受伤停工留薪期间，工资由谁支付？工伤保险费用又由谁缴纳？,停工留薪期内原工资福利待遇不变，由所在单位按月支付；工伤保险费由用人单位缴纳，职工不缴纳。,04_work_injury_regulation.txt;02_social_insurance_law.txt,,所在单位;用人单位;不缴纳,easy
+24,cross_doc,未休年休假的300%工资报酬，和法定节假日加班的300%工资，是同一回事吗？,不是。未休年假按日工资收入的300%支付年休假工资报酬（年休假条例）；法定休假日加班按不低于工资的300%支付加班费（工资支付暂行规定），两者依据和适用情形不同。,03_annual_leave_regulation.txt;06_wage_payment_regulation.txt,,不是;年休假;加班费,easy
+25,cross_doc,解除劳动合同时，工资什么时候结清？经济补偿又怎么计算？,工资在解除或终止劳动合同时一次付清；经济补偿按工作年限每满一年支付一个月工资，六个月以上不满一年按一年计算，不满六个月支付半个月工资。,06_wage_payment_regulation.txt;01_labor_contract_law.txt,,一次付清;一个月;半个月,easy
+26,cross_doc,养老保险累计缴费满15年，和年休假天数按累计工作年限计算，是同一个“年限”概念吗？,不是。15年是领取基本养老金的最低累计缴费年限；年休假天数按职工累计工作年限分档：满1年不满10年5天、满10年不满20年10天、满20年15天。,02_social_insurance_law.txt;03_annual_leave_regulation.txt,,不是;15年;5天;10天;15天,easy
+27,unanswerable,2026年上海市社保缴费基数的上下限分别是多少？,资料中没有相关信息。,,,没有,easy
+28,unanswerable,住房公积金贷款的最高额度是多少？,资料中没有相关信息。,,,没有,easy
+29,unanswerable,当前住房公积金贷款的利率是多少？,资料中没有相关信息。,,,没有,easy
+30,unanswerable,加班费是否计入社保缴费基数？,资料中没有相关信息。,,,没有,easy
+31,answerable,劳动合同期限三个月以上不满一年的，试用期最长可以约定多久？,试用期不得超过一个月。,01_labor_contract_law.txt,,一个月,easy
+32,answerable,同一用人单位与同一劳动者可以约定几次试用期？,只能约定一次试用期。,01_labor_contract_law.txt,,一次,easy
+33,answerable,以完成一定工作任务为期限的劳动合同，可以约定试用期吗？,不得约定试用期。,01_labor_contract_law.txt,,不得约定,easy
+34,answerable,用人单位自用工之日起满一年不与劳动者订立书面劳动合同，视为什么？,视为用人单位与劳动者已订立无固定期限劳动合同。,01_labor_contract_law.txt,,无固定期限,easy
+35,answerable,职工基本医疗保险由谁缴纳？,由用人单位和职工共同缴纳基本医疗保险费。,02_social_insurance_law.txt,,用人单位;职工;共同缴纳,easy
+36,answerable,生育保险由谁缴纳？,由用人单位缴纳生育保险费，职工不缴纳。,02_social_insurance_law.txt,,用人单位;不缴纳,easy
+37,answerable,失业保险金领取期限与缴费年限有什么关系？,累计缴费满一年不足五年的，领取失业保险金的期限最长为十二个月；满五年不足十年的，最长为十八个月；十年以上的，最长为二十四个月。,02_social_insurance_law.txt,,十二个月;十八个月;二十四个月,easy
+38,answerable,年休假可以跨年度安排吗？,年休假一般不跨年度安排；单位因生产、工作特点确有必要跨年度安排的，可以跨 1 个年度安排。,03_annual_leave_regulation.txt,,一般不跨年度;1个年度,easy
+39,answerable,职工请事假累计多少天以上且单位按照规定不扣工资的，不享受当年年休假？,累计 20 天以上。,03_annual_leave_regulation.txt,,20天,easy
+40,answerable,累计工作满 1 年不满 10 年的职工，请病假累计多久以上不享受当年年休假？,请病假累计 2 个月以上。,03_annual_leave_regulation.txt,,2个月,easy
+41,answerable,哪些情形视同工伤？,在工作时间和工作岗位突发疾病死亡或者在 48 小时之内经抢救无效死亡的；在抢险救灾等维护国家利益、公共利益活动中受到伤害的；职工原在军队服役，因战、因公负伤致残，已取得革命伤残军人证，到用人单位后旧伤复发的。,04_work_injury_regulation.txt,,48小时;抢险救灾;旧伤复发,easy
+42,answerable,哪些情形不得认定为工伤或者视同工伤？,故意犯罪的；醉酒或者吸毒的；自残或者自杀的。,04_work_injury_regulation.txt,,故意犯罪;醉酒;自残,easy
+43,answerable,停工留薪期内，原工资福利待遇由谁支付？,由所在单位按月支付，原工资福利待遇不变。,04_work_injury_regulation.txt,,所在单位;按月支付,easy
+44,answerable,新参加工作的职工从什么时候开始缴存住房公积金？,从参加工作的第二个月开始缴存。,05_housing_fund_regulation.txt,,第二个月,easy
+45,answerable,单位应当于每月发放职工工资之日起多少日内将住房公积金汇缴到专户？,5 日内。,05_housing_fund_regulation.txt,,5日,easy
+46,answerable,住房公积金管理中心应当自受理贷款申请之日起多少日内作出准予贷款或者不准贷款的决定？,10 日内。,05_housing_fund_regulation.txt,,10日,easy
+47,answerable,安排劳动者延长工作时间的，支付不低于工资的百分之多少？,不低于工资的 150%。,06_wage_payment_regulation.txt,,150%,easy
+48,answerable,休息日安排劳动者工作又不能安排补休的，支付不低于工资的百分之多少？,不低于工资的 200%。,06_wage_payment_regulation.txt,,200%,easy
+49,cross_doc,建立劳动关系后，书面劳动合同的订立时限和社保登记时限分别是多久？,书面劳动合同：自用工之日起一个月内；社保登记：自用工之日起三十日内。,01_labor_contract_law.txt;02_social_insurance_law.txt,,一个月;三十日,easy
+50,cross_doc,工伤职工在停工留薪期内，工资由谁支付？用人单位能否解除劳动合同？,停工留薪期内原工资福利待遇不变，由所在单位按月支付；职工因工负伤并被确认丧失或者部分丧失劳动能力的，用人单位不得依照无过失性辞退或经济性裁员的规定解除劳动合同。,04_work_injury_regulation.txt;01_labor_contract_law.txt,,所在单位;不得解除,easy
+51,cross_doc,单位每月发放工资后，住房公积金汇缴时限和工资支付周期分别是什么？,公积金：自发放工资之日起 5 日内汇缴；工资：至少每月支付一次。,05_housing_fund_regulation.txt;06_wage_payment_regulation.txt,,5日;每月,easy
+52,cross_doc,年休假期间工资和法定节假日加班工资分别怎么支付？,年休假期间享受与正常工作期间相同的工资收入；法定休假日安排工作的，支付不低于工资的 300%。,03_annual_leave_regulation.txt;06_wage_payment_regulation.txt,,相同;300%,easy
+53,cross_doc,解除劳动合同时，工资何时结清？住房公积金账户如何办理？,工资在解除或终止劳动合同时一次付清；单位应自劳动关系终止之日起 30 日内办理公积金变更登记及账户转移或封存手续。,06_wage_payment_regulation.txt;05_housing_fund_regulation.txt,,一次付清;30日,easy
+54,cross_doc,经济补偿按工作年限计算，年休假天数也按累计工作年限计算，两者是同一个年限吗？,不是。经济补偿按劳动者在本单位工作的年限计算；年休假按职工累计工作年限分档。,01_labor_contract_law.txt;03_annual_leave_regulation.txt,,不是;本单位;累计,easy
+55,cross_doc,未订立书面劳动合同的二倍工资和加班工资，分别依据什么标准计算？,二倍工资：自用工之日起超过一个月不满一年未订立书面劳动合同的，每月支付二倍工资；加班工资：延长工时 150%、休息日 200%、法定休假日 300%。,01_labor_contract_law.txt;06_wage_payment_regulation.txt,,二倍;150%;200%;300%,easy
+56,unanswerable,2025 年上海市最低工资标准的具体金额是多少？,资料中没有相关信息。,,,没有,easy
+57,unanswerable,员工离职当月工资按多少天折算？,资料中没有相关信息。,,,没有,easy
+58,unanswerable,住房公积金贷款支持哪些还款方式？,资料中没有相关信息。,,,没有,easy
+59,unanswerable,未休年假的 300% 补偿是否包含年终奖？,资料中没有相关信息。,,,没有,easy
+60,unanswerable,住房公积金贷款的首付比例是多少？,资料中没有相关信息。,,,没有,easy
+61,cross_doc,职工个人需要缴纳社会保险费和住房公积金吗？分别由谁缴纳？,基本养老、基本医疗、失业保险由用人单位和职工共同缴纳；工伤、生育保险由用人单位缴纳，职工不缴纳；住房公积金由单位和职工共同缴存。,02_social_insurance_law.txt;05_housing_fund_regulation.txt,,共同缴纳;用人单位;不缴纳;缴存,easy
+62,cross_doc,单位录用职工后，社会保险登记和住房公积金缴存登记的法定时限分别是多久？,社会保险登记：自用工之日起 30 日内；住房公积金缴存登记：自录用之日起 30 日内。,02_social_insurance_law.txt;05_housing_fund_regulation.txt,,30日,easy
+63,cross_doc,劳动者在试用期的工资下限，以及工作日延长工作时间的加班工资标准分别是什么？,试用期工资不得低于本单位相同岗位最低档工资或者劳动合同约定工资的 80%，并不得低于当地最低工资标准；工作日延长工作时间支付不低于 150% 的工资。,01_labor_contract_law.txt;06_wage_payment_regulation.txt,,80%;150%,easy
+64,cross_doc,工伤保险费用由谁缴纳？单位应当在多久内提出工伤认定申请？,工伤保险费由用人单位缴纳，职工不缴纳；单位应当自事故伤害发生之日或者被诊断、鉴定为职业病之日起 30 日内提出工伤认定申请。,04_work_injury_regulation.txt,02_social_insurance_law.txt,用人单位;30日,easy
+65,cross_doc,年休假期间工资和休息日加班工资分别怎么支付？,年休假期间享受与正常工作期间相同的工资收入；休息日安排工作又不能安排补休的，支付不低于工资的 200%。,03_annual_leave_regulation.txt;06_wage_payment_regulation.txt,,相同;200%,easy
+66,unanswerable,2026 年上海市住房公积金缴存比例的上限是多少？,资料中没有相关信息。,,,没有,easy
+67,unanswerable,员工婚假有多少天？,资料中没有相关信息。,,,没有,easy
+68,unanswerable,女职工产假有多少天？,资料中没有相关信息。,,,没有,easy
+69,unanswerable,住房公积金贷款最长可以贷多少年？,资料中没有相关信息。,,,没有,easy
+70,unanswerable,员工每年有几天带薪病假？,资料中没有相关信息。,,,没有,easy
+71,answerable,职工在工作时间和工作场所内，因操作设备受伤，算不算工伤？,应当认定为工伤（工作时间和工作场所内，因工作原因受到事故伤害）。,04_work_injury_regulation.txt,,应当认定;工作原因,hard
+72,answerable,职工在上班前提前到车间预热设备时受伤，算不算工伤？,应当认定为工伤（工作时间前后在工作场所内，从事与工作有关的预备性工作受到事故伤害）。,04_work_injury_regulation.txt,,应当认定;预备性,hard
+73,answerable,职工在下班后留在车间清理工具时受伤，算不算工伤？,应当认定为工伤（工作时间前后在工作场所内，从事与工作有关的收尾性工作受到事故伤害）。,04_work_injury_regulation.txt,,应当认定;收尾性,hard
+74,answerable,职工在工作时间和工作场所内，因履行工作职责被客户打伤，算不算工伤？,应当认定为工伤（工作时间和工作场所内，因履行工作职责受到暴力等意外伤害）。,04_work_injury_regulation.txt,,应当认定;履行工作职责,hard
+75,answerable,职工患职业病，算不算工伤？,应当认定为工伤（患职业病属于应当认定工伤的情形）。,04_work_injury_regulation.txt,,应当认定;职业病,hard
+76,answerable,职工因工外出期间，因工作原因受伤，算不算工伤？,应当认定为工伤（因工外出期间，由于工作原因受到伤害）。,04_work_injury_regulation.txt,,应当认定;因工外出,hard
+77,answerable,职工在上下班途中被机动车撞伤，算不算工伤？,应当认定为工伤（在上下班途中，受到机动车事故伤害）。,04_work_injury_regulation.txt,,应当认定;上下班途中;机动车,hard
+78,answerable,职工在工作时间和工作岗位突发疾病当场死亡，算不算工伤？,视同工伤（在工作时间和工作岗位，突发疾病死亡）。,04_work_injury_regulation.txt,,视同工伤,hard
+79,answerable,职工在工作时突发疾病，48 小时内经抢救无效死亡，算不算工伤？,视同工伤（在工作时间和工作岗位，突发疾病在 48 小时之内经抢救无效死亡）。,04_work_injury_regulation.txt,,视同工伤;48小时,hard
+80,answerable,职工在工作时突发疾病，抢救 72 小时后死亡，算不算工伤？,不视同工伤（超过 48 小时，不符合视同工伤条件）。,04_work_injury_regulation.txt,,不视同;48小时,hard
+81,answerable,职工参加抢险救灾受伤，算不算工伤？,视同工伤（在抢险救灾等维护国家利益、公共利益活动中受到伤害）。,04_work_injury_regulation.txt,,视同工伤;抢险救灾,hard
+82,answerable,退役军人到用人单位后旧伤复发，算不算工伤？,视同工伤（原在军队服役，因战、因公负伤致残，已取得革命伤残军人证，到用人单位后旧伤复发）。,04_work_injury_regulation.txt,,视同工伤;旧伤复发,hard
+83,answerable,职工因醉酒导致受伤，算不算工伤？,不得认定为工伤或者视同工伤。,04_work_injury_regulation.txt,,不得认定;醉酒,hard
+84,answerable,职工自残受伤，算不算工伤？,不得认定为工伤或者视同工伤。,04_work_injury_regulation.txt,,不得认定;自残,hard
+85,answerable,职工周末在家休息时受伤，算不算工伤？,不属于工伤（不符合工作时间、工作场所、工作原因等工伤认定条件）。,04_work_injury_regulation.txt,,不属于工伤,hard
+86,answerable,《工伤保险条例》第十五条规定了哪些视同工伤的情形？,三种：工作时间和工作岗位突发疾病死亡或 48 小时内抢救无效死亡；抢险救灾等维护国家利益、公共利益活动中受伤；退役军人旧伤复发。,04_work_injury_regulation.txt,,48小时;抢险救灾;旧伤复发,hard
+87,answerable,《工伤保险条例》第十六条规定了哪些不得认定工伤的情形？,因犯罪或者违反治安管理伤亡的；醉酒导致伤亡的；自残或者自杀的。,04_work_injury_regulation.txt,,犯罪;醉酒;自残,hard
+88,answerable,《劳动合同法》第十九条对试用期期限是怎么分档规定的？,三个月以上不满一年的，试用期不超过一个月；一年以上不满三年的，不超过二个月；三年以上固定期限和无固定期限的，不超过六个月。,01_labor_contract_law.txt,,一个月;二个月;六个月,hard
+89,answerable,《劳动合同法》第四十七条规定经济补偿怎么计算？,每满一年支付一个月工资；六个月以上不满一年按一年计算；不满六个月支付半个月工资；月工资高于当地上年度职工月平均工资三倍的，按三倍支付且年限最高不超过十二年。,01_labor_contract_law.txt,,一个月;半个月;十二年,hard
+90,answerable,《社会保险法》第三十三条规定工伤保险费用由谁缴纳？,职工应当参加工伤保险，由用人单位缴纳工伤保险费，职工不缴纳工伤保险费。,02_social_insurance_law.txt,,用人单位;不缴纳,hard
+91,answerable,《住房公积金管理条例》第二十四条规定哪些情形可以提取住房公积金？,包括支付房租、购买/建造/翻建/大修自住住房、偿还购房贷款本息、装修自住住房、支付物业费、离休退休、完全丧失劳动能力并与单位终止劳动关系、出境定居等。,05_housing_fund_regulation.txt,,房租;购买;退休;出境定居,hard
+92,answerable,《职工带薪年休假条例》第四条规定哪些情形不享受当年年休假？,寒暑假天数多于年休假；事假累计 20 天以上且单位不扣工资；累计工作满 1 年不满 10 年请病假 2 个月以上；满 10 年不满 20 年请病假 3 个月以上；满 20 年请病假 4 个月以上。,03_annual_leave_regulation.txt,,寒暑假;事假20天;病假2个月;病假3个月;病假4个月,hard
+93,answerable,《工资支付暂行规定》第十三条对加班工资规定了哪三档标准？,延长工作时间不低于 150%；休息日工作又不能补休不低于 200%；法定休假日工作不低于 300%。,06_wage_payment_regulation.txt,,150%;200%;300%,hard
+94,answerable,《劳动合同法》第四十二条规定用人单位不得解除劳动合同的情形有哪些？,从事接触职业病危害作业未做离岗检查或疑似职业病病人在诊断/医学观察期间；患职业病或因工负伤并被确认丧失/部分丧失劳动能力；患病或非因工负伤在医疗期内；女职工孕期、产期、哺乳期；在本单位连续工作满十五年且距法定退休年龄不足五年；法律行政法规规定的其他情形。,01_labor_contract_law.txt,,职业病;工伤;医疗期;孕期;十五年,hard
+95,answerable,《社会保险法》第四十五条规定领取失业保险金需要满足哪些条件？,失业前用人单位和本人已缴纳失业保险费满一年；非因本人意愿中断就业；已办理失业登记并有求职要求。,02_social_insurance_law.txt,,满一年;非因本人意愿;失业登记,hard
+96,answerable,试用期最长能设多久？,按合同期限分档：三个月以上不满一年最长一个月；一年以上不满三年最长二个月；三年以上固定期限和无固定期限最长六个月。,01_labor_contract_law.txt,,一个月;二个月;六个月,hard
+97,answerable,同一员工换岗后，单位能不能再次约定试用期？,不能，同一用人单位与同一劳动者只能约定一次试用期。,01_labor_contract_law.txt,,一次,hard
+98,answerable,经济补偿最多支付多少年？,劳动者月工资高于当地上年度职工月平均工资三倍的，支付经济补偿的年限最高不超过十二年。,01_labor_contract_law.txt,,十二年,hard
+99,answerable,竞业限制最长几年？,竞业限制期限不得超过二年。,01_labor_contract_law.txt,,二年,hard
+100,answerable,年休假没休，单位只按 1 倍工资补偿合法吗？,不合法。对职工应休未休的年休假天数，单位应当按照该职工日工资收入的 300% 支付年休假工资报酬。,03_annual_leave_regulation.txt,,不合法;300%,hard
+101,answerable,单位不安排年休假又不支付补偿，员工可以怎么办？,由县级以上地方人民政府人事部门或者劳动保障部门责令限期改正；逾期不改正的，除责令支付年休假工资报酬外，还应加付赔偿金；拒不支付的，可申请人民法院强制执行。,03_annual_leave_regulation.txt,,责令;赔偿金;强制执行,hard
+102,answerable,单位超过 30 日未申请工伤认定，期间发生的工伤待遇费用由谁承担？,由该用人单位负担。,04_work_injury_regulation.txt,,用人单位;负担,hard
+103,answerable,单位逾期不缴住房公积金，会被强制吗？,由住房公积金管理中心责令限期缴存；逾期仍不缴存的，可以申请人民法院强制执行。,05_housing_fund_regulation.txt,,强制执行,hard
+104,answerable,解除劳动合同后，住房公积金账户怎么处理？,单位应当自劳动关系终止之日起 30 日内办理变更登记，并办理职工住房公积金账户转移或者封存手续。,05_housing_fund_regulation.txt,,30日;转移;封存,hard
+105,answerable,单位不申请工伤认定，职工个人最晚多久可以申请？,工伤职工或者其直系亲属、工会组织可以在事故伤害发生之日或者被诊断、鉴定为职业病之日起 1 年内直接申请。,04_work_injury_regulation.txt,,1年,hard
+106,cross_doc,单位不缴社保和不缴公积金，分别会有什么后果？,社保：责令限期缴纳或补足，按日加收万分之五滞纳金，逾期可处欠缴数额一倍以上三倍以下罚款；公积金：责令限期缴存，逾期可申请人民法院强制执行。,02_social_insurance_law.txt;05_housing_fund_regulation.txt,,滞纳金;强制执行,hard
+107,cross_doc,未签书面劳动合同的二倍工资，和未缴社保的滞纳金，分别怎么规定？,二倍工资：自用工之日起超过一个月不满一年未订立书面劳动合同的，每月支付二倍工资；社保滞纳金：按日加收万分之五。,01_labor_contract_law.txt;02_social_insurance_law.txt,,二倍;万分之五,hard
+108,cross_doc,解除劳动合同时，经济补偿和未休年假补偿分别怎么算？,经济补偿按工作年限每满一年一个月工资，六个月以上不满一年按一年，不满六个月半个月；未休年假按日工资收入的 300% 支付。,01_labor_contract_law.txt;03_annual_leave_regulation.txt,,一个月;半个月;300%,hard
+109,cross_doc,未休年休假 300% 补偿和休息日加班 200% 工资，分别适用什么情形？,未休年假：对应休未休天数按日工资 300% 支付；休息日加班：安排工作又不能补休的，支付不低于工资 200%。,03_annual_leave_regulation.txt;06_wage_payment_regulation.txt,,300%;200%,hard
+110,cross_doc,劳动合同终止后，哪些情形可以提取住房公积金？,离休、退休；完全丧失劳动能力并与单位终止劳动关系；出境定居等；具体以条例第二十四条为准。,05_housing_fund_regulation.txt,01_labor_contract_law.txt,退休;终止劳动关系;出境定居,hard
+111,cross_doc,社保登记和工伤认定申请的法定时限分别是多久？,社保登记：自用工之日起 30 日内；工伤认定申请：自事故伤害发生之日或者被诊断、鉴定为职业病之日起 30 日内。,02_social_insurance_law.txt;04_work_injury_regulation.txt,,30日,hard
+112,cross_doc,工伤停工留薪期工资由谁支付？工资至少多久支付一次？,停工留薪期内原工资福利待遇不变，由所在单位按月支付；工资至少每月支付一次。,04_work_injury_regulation.txt;06_wage_payment_regulation.txt,,所在单位;每月,hard
+113,cross_doc,非因本人意愿中断就业可以领失业保险金；用人单位解除劳动合同的经济补偿怎么算？,失业保险金条件包括缴费满一年、非因本人意愿中断就业、已办理失业登记并有求职要求；经济补偿按工作年限每满一年一个月工资，六个月以上不满一年按一年，不满六个月半个月。,02_social_insurance_law.txt;01_labor_contract_law.txt,,非因本人意愿;满一年;一个月;半个月,hard
+114,unanswerable,员工离职取得的经济补偿是否需要缴纳个人所得税？,资料中没有相关信息。,,,没有,hard
+115,unanswerable,工伤认定后一般多久能拿到赔偿款？,资料中没有相关信息。,,,没有,hard
+116,unanswerable,申请住房公积金贷款需要查询个人征信吗？,资料中没有相关信息。,,,没有,hard
+117,answerable,单位未缴社保，员工能否直接向法院起诉？,不能直接起诉；个人与用人单位发生社会保险争议的，可以依法申请调解、仲裁，对仲裁裁决不服的，可以依法提起诉讼。,02_social_insurance_law.txt,,仲裁;诉讼,hard
+118,answerable,年休假期间的绩效工资如何发放？,劳动者依法享受年休假期间，用人单位应按劳动合同规定的标准支付工资。,06_wage_payment_regulation.txt,,劳动合同规定;标准;正常,hard
+119,unanswerable,加班费的计算基数是否包含年终奖？,资料中没有相关信息。,,,没有,hard
+120,unanswerable,试用期员工是否享有婚假？,资料中没有相关信息。,,,没有,hard
+121,answerable,职工在工作时突发疾病，抢救 48 小时后死亡，算不算工伤？,不视同工伤（超过 48 小时，不符合视同工伤条件）。,04_work_injury_regulation.txt,,不视同;48小时,hard
+122,answerable,职工在工作时间和工作岗位突发疾病，经抢救未死亡但丧失劳动能力，算不算工伤？,不视同工伤（条例要求突发疾病死亡或者在 48 小时之内经抢救无效死亡）。,04_work_injury_regulation.txt,,不视同;48小时,hard
+123,answerable,职工因违反治安管理受伤，算不算工伤？,不得认定为工伤或者视同工伤。,04_work_injury_regulation.txt,,不得认定;违反治安管理,hard
+124,answerable,职工因犯罪受伤，算不算工伤？,不得认定为工伤或者视同工伤。,04_work_injury_regulation.txt,,不得认定;犯罪,hard
+125,answerable,职工因工外出期间发生事故下落不明，算不算工伤？,应当认定为工伤（因工外出期间，由于工作原因受到伤害或者发生事故下落不明）。,04_work_injury_regulation.txt,,应当认定;因工外出;下落不明,hard
+126,answerable,职工在上下班途中被自行车撞伤，算不算工伤？,不属于条例规定的工伤情形（条例规定的是受到机动车事故伤害，自行车不属于机动车）。,04_work_injury_regulation.txt,,不属于;机动车,hard
+127,answerable,职工在单位宿舍休息时受伤，算不算工伤？,不属于工伤（不符合工作时间、工作场所、工作原因等条件）。,04_work_injury_regulation.txt,,不属于工伤,hard
+128,answerable,职工在工作时间和工作场所内从事与工作无关的个人活动受伤，算不算工伤？,不属于工伤（不是因工作原因受到事故伤害）。,04_work_injury_regulation.txt,,不属于工伤;工作原因,hard
+129,answerable,职工因工外出期间办理私事受伤，算不算工伤？,不属于工伤（不是由于工作原因受到伤害）。,04_work_injury_regulation.txt,,不属于工伤;工作原因,hard
+130,answerable,职工在工作时间前后在工作场所内从事与工作无关的活动受伤，算不算工伤？,不属于工伤（不是从事与工作有关的预备性或者收尾性工作）。,04_work_injury_regulation.txt,,不属于工伤;预备性;收尾性,hard
+131,cross_doc,单位未依法缴纳工伤保险，职工发生工伤后待遇由谁支付？,由用人单位支付工伤保险待遇；用人单位不支付的，从工伤保险基金中先行支付，之后由用人单位偿还。,02_social_insurance_law.txt;04_work_injury_regulation.txt,,用人单位;先行支付,hard
+132,cross_doc,解除劳动合同时，经济补偿、未休年假补偿、公积金账户分别怎么处理？,经济补偿按工作年限每满一年一个月；未休年假按日工资 300% 支付；公积金账户在劳动关系终止之日起 30 日内办理转移或封存。,01_labor_contract_law.txt;03_annual_leave_regulation.txt;05_housing_fund_regulation.txt,,一个月;300%;30日;转移,hard
+133,cross_doc,单位不缴社保、不缴公积金、不签书面劳动合同，分别会有什么后果？,社保：责令补缴、按日万分之五滞纳金、可罚款；公积金：责令限期缴存，逾期可强制执行；未签合同：超过一个月不满一年每月支付二倍工资。,01_labor_contract_law.txt;02_social_insurance_law.txt;05_housing_fund_regulation.txt,,滞纳金;二倍;强制执行,hard
+134,cross_doc,工伤停工留薪期工资、年休假期间工资、休息日加班工资分别怎么支付？,停工留薪期原工资福利待遇不变，由单位按月支付；年休假期间与正常工作期间相同；休息日加班不能补休的支付不低于 200%。,04_work_injury_regulation.txt;03_annual_leave_regulation.txt;06_wage_payment_regulation.txt,,所在单位;相同;200%,hard
+135,cross_doc,试用期工资下限、工作日延长工作时间加班工资、社保登记时限分别是什么？,试用期工资不得低于约定工资的 80% 且不低于当地最低工资；工作日延长工时不低于 150%；社保登记自用工之日起 30 日内。,01_labor_contract_law.txt;06_wage_payment_regulation.txt;02_social_insurance_law.txt,,80%;150%;30日,hard
+136,cross_doc,劳动合同终止时，工资何时结清、经济补偿怎么算、公积金账户怎么办？,工资在终止时一次付清；经济补偿按工作年限每满一年一个月；公积金账户在终止之日起 30 日内转移或封存。,06_wage_payment_regulation.txt;01_labor_contract_law.txt;05_housing_fund_regulation.txt,,一次付清;一个月;30日,hard
+137,cross_doc,工伤认定申请、社保登记、公积金缴存登记的法定时限分别是多久？,工伤认定申请：30 日内；社保登记：自用工之日起 30 日内；公积金缴存登记：自录用之日起 30 日内。,04_work_injury_regulation.txt;02_social_insurance_law.txt;05_housing_fund_regulation.txt,,30日,hard
+138,cross_doc,未签书面劳动合同二倍工资、未缴社保滞纳金、未缴公积金逾期后果分别是什么？,二倍工资：超过一个月不满一年每月二倍；社保滞纳金：按日万分之五；公积金：责令限期缴存，逾期可申请法院强制执行。,01_labor_contract_law.txt;02_social_insurance_law.txt;05_housing_fund_regulation.txt,,二倍;万分之五;强制执行,hard
+139,cross_doc,经济补偿、年休假、失业保险金分别按什么年限计算或领取？,经济补偿按在本单位工作年限；年休假按累计工作年限分档；失业保险金按累计缴费年限分档（满 1 年不足 5 年最长 12 个月，5-10 年 18 个月，10 年以上 24 个月）。,01_labor_contract_law.txt;03_annual_leave_regulation.txt;02_social_insurance_law.txt,,本单位;累计;12个月;18个月;24个月,hard
+140,cross_doc,女职工在孕期，用人单位能否依照无过失性辞退或经济性裁员的规定解除劳动合同？生育保险由谁缴纳？,不能（女职工在孕期、产期、哺乳期的，用人单位不得依照第四十条、第四十一条解除）；生育保险由用人单位缴纳，职工不缴纳。,01_labor_contract_law.txt;02_social_insurance_law.txt,,不得;孕期;用人单位;不缴纳,hard
+141,cross_doc,单位申请工伤认定的时限和领取失业保险金的条件分别是什么？,工伤认定：自事故伤害发生之日或者被诊断、鉴定为职业病之日起 30 日内；失业保险金：缴费满一年、非因本人意愿中断就业、已办理失业登记并有求职要求。,04_work_injury_regulation.txt;02_social_insurance_law.txt,,30日;满一年;非因本人意愿;失业登记,hard
+142,cross_doc,工伤停工留薪期工资由谁支付？单位未缴工伤保险时工伤待遇由谁承担？,停工留薪期原工资福利待遇不变，由所在单位按月支付；单位未依法缴纳工伤保险费的，由用人单位支付工伤保险待遇。,04_work_injury_regulation.txt;02_social_insurance_law.txt,,所在单位;用人单位,hard
+143,cross_doc,请事假累计 20 天以上不享受年休假，和因劳动者原因造成损失每月扣工资不超过 20%，分别是什么规定？,事假 20 天以上且单位不扣工资的，不享受当年年休假；因劳动者本人原因造成经济损失的，每月扣除部分不得超过当月工资的 20%。,03_annual_leave_regulation.txt;06_wage_payment_regulation.txt,,20天;20%,hard
+144,cross_doc,解除劳动合同时工资何时结清？公积金账户如何办理？,工资在解除劳动合同时一次付清；单位应自劳动关系终止之日起 30 日内办理公积金变更登记及账户转移或封存。,06_wage_payment_regulation.txt;05_housing_fund_regulation.txt,,一次付清;30日,hard
+145,cross_doc,未签书面劳动合同二倍工资和未休年假补偿分别怎么规定？,二倍工资：超过一个月不满一年未订立书面合同的，每月支付二倍工资；未休年假：按日工资收入的 300% 支付。,01_labor_contract_law.txt;03_annual_leave_regulation.txt,,二倍;300%,hard
+146,unanswerable,工伤职工在停工留薪期内能否享受年休假？,资料中没有相关信息。,,,没有,hard
+147,unanswerable,单位未缴公积金，员工可以要求多少赔偿？,资料中没有相关信息。,,,没有,hard
+148,unanswerable,经济补偿金是否计入社保缴费基数？,资料中没有相关信息。,,,没有,hard
+149,unanswerable,试用期员工怀孕，单位能否延长试用期？,资料中没有相关信息。,,,没有,hard
+150,unanswerable,未休年假补偿是否计入经济补偿基数？,资料中没有相关信息。,,,没有,hard

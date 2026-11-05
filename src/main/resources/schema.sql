@@ -62,13 +62,19 @@ CREATE TABLE IF NOT EXISTS eval_case (
     kb_id        BIGINT,
     question     TEXT NOT NULL,
     ground_truth TEXT,
-    doc_ids      TEXT,
+    doc_ids      TEXT,          -- 必选文档（分号分隔）
+    optional_files TEXT,        -- 可选文档（分号分隔），引用到加分但不强制
     keywords     TEXT,          -- 自动判分关键词，多个用分号分隔
+    difficulty   VARCHAR(20) DEFAULT 'easy', -- easy / hard
     category     VARCHAR(30)    -- 可答 / 跨文档 / 不可答
 );
 
 -- 兼容已有数据库：老表没有 keywords 字段时补上
 ALTER TABLE eval_case ADD COLUMN IF NOT EXISTS keywords TEXT;
+-- 兼容已有数据库：可选文档字段
+ALTER TABLE eval_case ADD COLUMN IF NOT EXISTS optional_files TEXT;
+-- 兼容已有数据库：难度字段
+ALTER TABLE eval_case ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'easy';
 
 -- 默认知识库，本地联调用
 INSERT INTO kb(name, owner_id)
@@ -128,5 +134,6 @@ COMMENT ON COLUMN eval_case.id IS '主键';
 COMMENT ON COLUMN eval_case.kb_id IS '知识库 id';
 COMMENT ON COLUMN eval_case.question IS '评测问题';
 COMMENT ON COLUMN eval_case.ground_truth IS '标准答案';
-COMMENT ON COLUMN eval_case.doc_ids IS '期望命中的文档 id 列表';
+COMMENT ON COLUMN eval_case.doc_ids IS '必选文档列表（分号分隔）';
+COMMENT ON COLUMN eval_case.optional_files IS '可选文档列表（分号分隔），引用到不扣分、没引用也不扣分';
 COMMENT ON COLUMN eval_case.category IS '题目类型：可答 / 跨文档 / 不可答';

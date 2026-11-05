@@ -55,8 +55,10 @@ public class EvalService {
     /** 单题结果 */
     public record CaseResult(int id,
                              String category,
+                             String difficulty,
                              String question,
                              String expectedFiles,
+                             String optionalFiles,
                              String retrievedFiles,
                              String citedFiles,
                              boolean recallHit,
@@ -98,8 +100,10 @@ public class EvalService {
         for (Map<String, Object> row : rows) {
             int id = ((Number) row.get("id")).intValue();
             String category = String.valueOf(row.get("category"));
+            String difficulty = row.get("difficulty") == null ? "easy" : String.valueOf(row.get("difficulty"));
             String question = String.valueOf(row.get("question"));
             String expected = row.get("doc_ids") == null ? "" : String.valueOf(row.get("doc_ids"));
+            String optional = row.get("optional_files") == null ? "" : String.valueOf(row.get("optional_files"));
             String groundTruth = row.get("ground_truth") == null ? "" : String.valueOf(row.get("ground_truth"));
             String keywords = row.get("keywords") == null ? "" : String.valueOf(row.get("keywords"));
 
@@ -111,6 +115,7 @@ public class EvalService {
                 List<RetrievedChunk> chunks = retrieval.chunks();
                 long retrievalMs = System.currentTimeMillis() - r0;
 
+                // 召回/引用覆盖只强制必选文档；optional_files 引用到不扣分、没引用也不扣分
                 Set<String> expectedFiles = splitToSet(expected);
                 Set<String> retrievedFiles = new LinkedHashSet<>();
                 for (RetrievedChunk chunk : chunks) {
@@ -151,14 +156,14 @@ public class EvalService {
                 }
 
                 long totalMs = System.currentTimeMillis() - t0;
-                results.add(new CaseResult(id, category, question, expected,
+                results.add(new CaseResult(id, category, difficulty, question, expected, optional,
                         String.join(";", retrievedFiles), String.join(";", citedFiles),
                         recallHit, recallCoverage, grounded,
                         hitKeywords, correct, refused, retrievalMs, answerMs, totalMs, answerText, ""));
             } catch (Exception e) {
                 long totalMs = System.currentTimeMillis() - t0;
                 log.error("评测题目失败: id={}, question={}", id, question, e);
-                results.add(new CaseResult(id, category, question, expected, "", "", false, 0,
+                results.add(new CaseResult(id, category, difficulty, question, expected, optional, "", "", false, 0,
                         false, "", false, null, 0, 0, totalMs, "", e.getMessage()));
             }
         }
@@ -258,13 +263,15 @@ public class EvalService {
             Path path = dir.resolve(fileName);
             try (Writer writer = new OutputStreamWriter(Files.newOutputStream(path), StandardCharsets.UTF_8)) {
                 writer.write("\uFEFF"); // BOM，方便 Excel 打开中文
-                writer.write("id,category,question,expected_files,retrieved_files,cited_files,recall_hit,recall_coverage,grounded,keyword_hits,correct,refused,retrieval_ms,answer_ms,total_ms,error,answer\n");
+                writer.write("id,category,difficulty,question,expected_files,optional_files,retrieved_files,cited_files,recall_hit,recall_coverage,grounded,keyword_hits,correct,refused,retrieval_ms,answer_ms,total_ms,error,answer\n");
                 for (CaseResult r : results) {
                     writer.write(String.join(",",
                             String.valueOf(r.id()),
                             r.category(),
+                            r.difficulty(),
                             csv(r.question()),
                             csv(r.expectedFiles()),
+                            csv(r.optionalFiles()),
                             csv(r.retrievedFiles()),
                             csv(r.citedFiles()),
                             String.valueOf(r.recallHit()),
