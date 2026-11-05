@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8080
 
 spring:
@@ -30,8 +30,8 @@ rag:
   # 检索时默认取回多少个片段（后面用评测集调）
   top-k: 5
   # 相似度阈值：低于它认为"资料里没有"，用于拒答
-  # 注意：Mock 向量没有真实语义，联调时可先调低到 0.1
-  score-threshold: 0.1
+  # 阈值扫描：0.1/0.3/0.5 在当前 150 题上指标一致，0.5 的 P95 更低；0.7 开始漏召回
+  score-threshold: 0.5
   # 查询拆解：多意图问题拆成子问题分别召回（关闭可做 A/B 对比）
   query-decomposition-enabled: true
   # 混合检索：向量召回 + BM25 词法召回，再用 RRF 融合
@@ -52,3 +52,4 @@ management:
     web:
       exposure:
         include: health,info
+
