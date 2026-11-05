@@ -3,6 +3,8 @@
 企业知识库智能问答（RAG）系统 —— Java 后端 + 原生前端实现。
 
 > 完整架构说明（含图、数据流、技术选型、已知限制、面试讲解要点）：[docs/architecture.md](docs/architecture.md)
+> 后续优化优先级与执行清单：[docs/optimization-plan.md](docs/optimization-plan.md)
+> P0 难例评测失败分析：[docs/failure-analysis.md](docs/failure-analysis.md)
 
 ## 技术栈
 

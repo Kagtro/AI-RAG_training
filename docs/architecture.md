@@ -1,4 +1,4 @@
-# 企业知识库 RAG 系统 · 架构说明
+﻿# 企业知识库 RAG 系统 · 架构说明
 
 > 版本：v1.0（2026-11-02）
 > 代码仓库：`E:\code\AI-RAG_training`（GitHub: Kagtro/AI-RAG_training）
@@ -473,7 +473,7 @@ SSE 事件：
 | `rag.chunk-size` | 700 | 切片大小（字符） |
 | `rag.chunk-overlap` | 120 | 相邻切片重叠 |
 | `rag.top-k` | 5 | 召回数量 |
-| `rag.score-threshold` | 0.1 | 阈值；**真实 Embedding 下偏低，需用评测集调到 0.4~0.6** |
+| `rag.score-threshold` | 0.5 | 阈值；经 150 题扫描 0.1/0.3/0.5 指标一致，0.5 延迟更低；0.7 开始漏召回 |
 | `rag.query-decomposition-enabled` | true | 多意图查询拆解开关 |
 | `rag.hybrid-enabled` | true | 向量 + BM25 混合检索开关 |
 | `ai.embedding-dimension` | 1024 | text-embedding-v3 维度 |
@@ -580,7 +580,7 @@ http://localhost:8080
 | 阶段 | 内容 | 目的 |
 |---|---|---|
 | P1（当前） | 索引 + 检索 + 问答 + 前端 + 流式 | 跑通闭环、可演示 |
-| P2 | 评测集（30 条）+ 指标（Recall@K/正确率/拒答率/P95/成本）+ 阈值调优 | 证明效果 |
+| P2 | 评测集（150 条，含 80 道难例）+ 指标（Recall@K/正确率/拒答率/P95/成本）+ 阈值调优 | 证明效果 |
 | P3 | `qa_log` 落库、删除文档、多知识库、缓存/限流 | 工程化 |
 | P4 | Rerank、混合检索（BM25+向量）、OCR、文档版本 | 效果提升 |
 | P5 | 鉴权/权限、Kafka/outbox、监控、CI/CD、部署 | 生产化 |
@@ -599,7 +599,7 @@ http://localhost:8080
 
 - "为什么不用微服务？" → 见 8.1；
 - "怎么保证不瞎编？" → 阈值 + 只给资料 + 强制引用 + 拒答 + 引用二次校验；
-- "怎么证明有效？" → 目前没有，下一步做 30 条评测集算 Recall@K/正确率/拒答率；
+- "怎么证明有效？" → 目前没有，下一步做 150 条评测集算 Recall@K/正确率/拒答率；
 - "数据量大了怎么办？" → 先调 HNSW 参数/加副本，再考虑独立向量库；索引服务可拆。
 
 ---
@@ -616,7 +616,7 @@ http://localhost:8080
 | `rag.chunk-size` | 700 | application.yml |
 | `rag.chunk-overlap` | 120 | application.yml |
 | `rag.top-k` | 5 | application.yml |
-| `rag.score-threshold` | 0.1 | application.yml |
+| `rag.score-threshold` | 0.5 | application.yml |
 | `ai.base-url` | 百炼兼容地址 | application.yml |
 | `ai.chat-model` | qwen-plus | application.yml |
 | `ai.embedding-model` | text-embedding-v3 | application.yml |
@@ -637,3 +637,8 @@ http://localhost:8080
 | 检索 SQL | `ChunkDao.searchSimilar` |
 | 问答/引用 | `ChatService`、`ChatController` |
 | 前端 | `static/index.html`、`static/js/app.js` |
+
+
+
+
+
