@@ -24,6 +24,28 @@ services:
     volumes:
       - redisdata:/data
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-app
+    environment:
+      # 容器内通过服务名访问 postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/rag
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      RAG_UPLOAD_DIR: /app/uploads
+      # 没有配置时使用 MockChatClient，链路仍可启动
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:

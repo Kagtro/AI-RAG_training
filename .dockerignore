@@ -1,0 +1,10 @@
+target/
+.git/
+.idea/
+.vscode/
+uploads/
+test-docs/
+eval/report-*.csv
+eval/report-*.json
+*.log
+.env
