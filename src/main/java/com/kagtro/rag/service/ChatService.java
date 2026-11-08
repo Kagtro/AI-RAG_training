@@ -64,10 +64,14 @@ public class ChatService {
 
     private final RetrievalService retrievalService;
     private final ChatClient chatClient;
+    private final com.kagtro.rag.dao.QaLogDao qaLogDao;
 
-    public ChatService(RetrievalService retrievalService, ChatClient chatClient) {
+    public ChatService(RetrievalService retrievalService,
+                       ChatClient chatClient,
+                       com.kagtro.rag.dao.QaLogDao qaLogDao) {
         this.retrievalService = retrievalService;
         this.chatClient = chatClient;
+        this.qaLogDao = qaLogDao;
     }
 
     /** 引用信息：前端用它展示"答案来自哪个文件第几页" */
@@ -94,6 +98,7 @@ public class ChatService {
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("问题不能为空");
         }
+        long started = System.currentTimeMillis();
 
         // 1. 检索：按需做查询拆解，然后每个子问题独立召回并融合
         var retrieval = retrievalService.retrieveWithDecomposition(kbId, question, topK, minScore);
@@ -101,7 +106,9 @@ public class ChatService {
 
         // 2. 一条都没召回：直接拒答，不浪费大模型调用，也避免编造
         if (chunks.isEmpty()) {
-            return new ChatAnswer(question, "资料中没有找到相关内容。", List.of(), 0);
+            String refusal = "资料中没有找到相关内容。";
+            qaLogDao.log(kbId, question, List.of(), refusal, System.currentTimeMillis() - started);
+            return new ChatAnswer(question, refusal, List.of(), 0);
         }
 
         // 3. 拼 Prompt：资料按 [1][2]... 编号，并带上文件名和页码
@@ -117,6 +124,7 @@ public class ChatService {
         // 6. 清掉不存在/未通过校验的引用编号，避免前端看到错误的编号
         answer = sanitizeAnswer(answer, chunks, citations);
 
+        qaLogDao.log(kbId, question, chunkIds(chunks), answer, System.currentTimeMillis() - started);
         return new ChatAnswer(question, answer, citations, chunks.size());
     }
 
@@ -137,6 +145,7 @@ public class ChatService {
             if (question == null || question.isBlank()) {
                 throw new IllegalArgumentException("问题不能为空");
             }
+            long started = System.currentTimeMillis();
 
             var retrieval = retrievalService.retrieveWithDecomposition(kbId, question, topK, minScore);
             List<RetrievedChunk> chunks = retrieval.chunks();
@@ -152,6 +161,7 @@ public class ChatService {
                 emitter.send(SseEmitter.event().name("meta").data(meta));
 
                 String refusal = "资料中没有找到相关内容。";
+                qaLogDao.log(kbId, question, List.of(), refusal, System.currentTimeMillis() - started);
                 emitter.send(SseEmitter.event().name("delta").data(Map.of("text", refusal)));
                 emitter.send(SseEmitter.event().name("done")
                         .data(Map.of("citations", List.of(), "retrievedCount", 0, "answer", refusal)));
@@ -186,6 +196,7 @@ public class ChatService {
             done.put("retrievedCount", chunks.size());
             done.put("answer", cleanAnswer);
             emitter.send(SseEmitter.event().name("done").data(done));
+            qaLogDao.log(kbId, question, chunkIds(chunks), cleanAnswer, System.currentTimeMillis() - started);
             emitter.complete();
         } catch (Exception e) {
             log.error("流式问答失败", e);
@@ -212,6 +223,15 @@ public class ChatService {
         }
         sb.append("【问题】\n").append(question).append('\n');
         return sb.toString();
+    }
+
+    /** 提取召回片段的 id，用于 qa_log */
+    private List<Long> chunkIds(List<RetrievedChunk> chunks) {
+        List<Long> ids = new ArrayList<>(chunks.size());
+        for (RetrievedChunk chunk : chunks) {
+            ids.add(chunk.chunkId());
+        }
+        return ids;
     }
 
     /** meta 事件：片段数、来源文档数、实际检索用的查询、每个片段的摘要（前端展示检索详情用） */
