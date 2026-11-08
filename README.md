@@ -17,12 +17,21 @@
 
 ## 快速开始
 
-```powershell
-# 1. 启动中间件（首次会自动拉镜像）
-docker compose up -d
+### 方式一：本地 IDEA 跑应用（推荐开发时）
 
-# 2. 启动应用
+```powershell
+# 只启动 PostgreSQL + Redis
+docker compose up -d postgres redis
+
+# 本地启动应用
 mvn spring-boot:run
+```
+
+### 方式二：全部容器化
+
+```powershell
+# 构建并启动 app + postgres + redis
+docker compose up -d --build
 ```
 
 浏览器打开 `http://localhost:8080`，上传文档后即可提问。
@@ -31,6 +40,29 @@ mvn spring-boot:run
 
 > 密钥放在项目根目录 `.env`（已被 `.gitignore` 忽略），格式：
 > `DASHSCOPE_API_KEY=sk-...`。没有 Key 时会自动使用 Mock 实现，链路仍可跑通。
+
+## 测试与 CI
+
+```powershell
+# 单元测试：切片、清洗、查询拆解
+mvn test
+```
+
+GitHub Actions 配置在 `.github/workflows/ci.yml`，每次 push/PR 自动跑 `mvn test`。
+
+## 问答日志
+
+每次 `/api/chat` 或 `/api/chat/stream` 会写入 `qa_log`：
+
+- 问题、召回片段 id、回答、耗时；
+- token/成本字段暂未接入，预留。
+
+排查时可查：
+
+```sql
+select id, question, retrieved_ids, total_ms, created_at
+from qa_log order by id desc limit 20;
+```
 
 ## 当前接口
 

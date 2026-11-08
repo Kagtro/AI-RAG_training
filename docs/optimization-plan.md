@@ -167,9 +167,20 @@ docker compose up -d
 ### 5.5 验收标准
 
 - `mvn test` 全绿；
-- 新机器 `docker compose up -d` 能启动应用；
+- 新机器 `docker compose up -d --build` 能启动应用；
 - CI 通过；
 - 能从日志/`qa_log` 查到一次问答的耗时和引用。
+
+### 5.6 完成情况
+
+- [x] `ChunkingServiceTest`、`TextCleanerTest`、`QueryDecompositionServiceTest`，共 9 个用例；
+- [x] `Dockerfile` 多阶段构建 + `docker-compose` 的 `app` 服务；
+- [x] Maven 构建使用阿里云镜像，解决容器内依赖下载慢；
+- [x] `.github/workflows/ci.yml`：push/PR 自动 `mvn test`；
+- [x] `QaLogDao`：问答写入 `qa_log`（问题、召回 ids、回答、耗时）；
+- [x] 容器启动验证：`/api/health`、`/actuator/health` 正常，`qa_log` 有记录。
+
+> 验证日期：2026-11-08；`rag-app` 验证后已停止，避免占用本机 8080。
 
 ---
 
