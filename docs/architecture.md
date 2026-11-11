@@ -432,8 +432,8 @@ Prompt 规则：
 | `ChunkingServiceTest` | ✅ 3 个用例 |
 | `TextCleanerTest` | ✅ 3 个用例 |
 | `QueryDecompositionServiceTest` | ✅ 3 个用例 |
-| `EvalService` 指标计算单测 | ⬜ 未补 |
-| `ChatService` 引用对齐单测 | ⬜ 未补 |
+| `EvalService` 指标计算单测 | ✅ 1 个用例 |
+| `ChatService` 引用对齐单测 | ✅ 2 个用例 |
 | Dockerfile + compose app 服务 | ✅ |
 | GitHub Actions `mvn test` | ✅ |
 | `qa_log` 落库 | ✅ 问题、召回 ids、回答、总耗时 |
@@ -441,7 +441,7 @@ Prompt 规则：
 
 ### 8.2 部署与运行
 
-- **单元测试**：3 个测试类、9 个用例（切片、清洗、查询拆解），`mvn test`；
+- **单元测试**：4 个测试类、12 个用例（切片、清洗、查询拆解、引用对齐、评测指标），`mvn test`；
 - **CI**：GitHub Actions push/PR 自动跑测试；
 - **Docker**：多阶段构建，运行镜像只含 JRE；
 - **Compose**：app + PostgreSQL + Redis，`uploads/` 挂载 volume；
@@ -469,7 +469,6 @@ Prompt 规则：
 ### 9.2 局限
 
 - **评测饱和**：自建 150 题全 1.0，不能代表开放场景；下一步要更难的数据集/人工抽检；
-- **P1 未完全闭环**：`EvalService` 指标计算、`ChatService` 引用对齐的单测未补；
 - **无鉴权**：`kbId` 由请求传入，存在越权风险；
 - **无 rerank**：召回后直接生成，精度依赖召回；
 - **BM25 应用层实现**：全量扫描 chunk，规模大要换 ES/PG 全文索引；

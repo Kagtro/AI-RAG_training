@@ -38,7 +38,7 @@
 | 5 | Prompt v2：否定结论/未规定不推断 | 拒答过度、拒答不足 | 难例通过率提升 |
 | 6 | 多查询覆盖注入 + 引用补齐 | 三份文档只引两份 | 跨文档召回/引用覆盖到 1.0 |
 | 7 | 阈值扫描 0.1/0.3/0.5/0.7 | 阈值靠拍脑袋 | 默认改 0.5，P95 降低 |
-| 8 | 单测 + Docker + CI + qa_log | 工程可信度不足 | 9 个测试、CI、一键启动 |
+| 8 | 单测 + Docker + CI + qa_log | 工程可信度不足 | 12 个测试、CI、一键启动 |
 
 ---
 
@@ -102,14 +102,14 @@
 | `ChunkingService` 单测 | ✅ 3 个用例 |
 | `TextCleaner` 单测 | ✅ 3 个用例 |
 | `QueryDecompositionService` 单测 | ✅ 3 个用例 |
-| `EvalService` 指标计算单测 | ⬜ 未补 |
-| `ChatService` 引用对齐单测 | ⬜ 未补 |
+| `EvalService` 指标计算单测 | ✅ 1 个用例 |
+| `ChatService` 引用对齐单测 | ✅ 2 个用例 |
 | Dockerfile + compose app 服务 | ✅ |
 | GitHub Actions `mvn test` | ✅ |
 | `qa_log` 落库 | ✅ 问题、召回 ids、回答、总耗时 |
 | token / 成本记录 | ⬜ 未接（字段预留） |
 
-> P1 没有完全闭环：测试只覆盖了 3 个纯逻辑类，`EvalService` 和 `ChatService` 的引用对齐仍缺测试；`qa_log` 只有延迟，没有 token 与成本。
+> P1 只剩 qa_log 的 token/成本未接入；核心逻辑已有 4 个测试类、12 个用例覆盖。
 
 ---
 

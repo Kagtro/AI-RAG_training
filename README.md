@@ -254,7 +254,7 @@ src/main/resources/
 ## 8. 测试、CI 与部署
 
 ```powershell
-# 目前 9 个纯逻辑单测：切片、清洗、查询拆解
+# 12 个纯逻辑单测：切片、清洗、查询拆解、引用对齐、评测指标
 mvn test
 ```
 
@@ -265,8 +265,8 @@ mvn test
 | `ChunkingServiceTest` | ✅ 3 个用例 |
 | `TextCleanerTest` | ✅ 3 个用例 |
 | `QueryDecompositionServiceTest` | ✅ 3 个用例 |
-| `EvalService` 指标计算单测 | ⬜ 未补 |
-| `ChatService` 引用对齐单测 | ⬜ 未补 |
+| `EvalService` 指标计算单测 | ✅ 1 个用例 |
+| `ChatService` 引用对齐单测 | ✅ 2 个用例 |
 | Dockerfile + compose app 服务 | ✅ |
 | GitHub Actions `mvn test` | ✅ |
 | `qa_log` 落库 | ✅ 问题、召回 ids、回答、总耗时 |
@@ -297,7 +297,7 @@ from qa_log order by id desc limit 20;
 - 没有 rerank、没有 Agent、没有多轮会话；
 - 没有 OCR，扫描版 PDF 解析为空；
 - 评测集自建且接近饱和，1.0 不能代表真实开放场景；
-- P1 仍有 `EvalService` / `ChatService` 引用对齐单测未补，`qa_log` 未记录 token/成本；
+- `qa_log` 未记录 token/成本；P1 仅剩这一项未闭环；
 - `.doc` 旧格式不支持；单机部署，无高可用。
 
 后续方向：难例评测、rerank、按条款切片、鉴权、Agent 工具调用。
