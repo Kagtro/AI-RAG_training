@@ -1,32 +1,34 @@
-﻿# 企业知识库 RAG 系统 · 架构说明
+# 企业知识库 RAG 问答系统 · 架构说明
 
-> 版本：v1.0（2026-11-02）
-> 代码仓库：`E:\code\AI-RAG_training`（GitHub: Kagtro/AI-RAG_training）
-> 用途：项目设计说明、面试讲解底稿、后续迭代依据
+> 版本：v2.0（2026-11-11）
+> 仓库：`E:\code\AI-RAG_training`（GitHub: Kagtro/AI-RAG_training）
+> 用途：设计说明、答辩/面试底稿、后续迭代依据
+>
+> 配套文档：快速开始与接口见 [README](../README.md)；优化过程见 [optimization-plan.md](optimization-plan.md)；难例分析见 [failure-analysis.md](failure-analysis.md)。
 
 ---
 
-## 1. 项目目标与非目标
+## 1. 目标与非目标
 
 ### 1.1 目标
 
-做一个**可运行、可演示、可量化**的企业知识库问答系统：
+做一个**可运行、可演示、可量化、可维护**的企业知识库问答系统：
 
-- 支持 PDF / Word / Markdown / TXT 上传；
-- 自动解析、切片、向量化并写入 PostgreSQL（pgvector）；
-- 基于问题做语义检索，召回相关片段；
-- 调用大模型生成**带引用**的回答，并支持 SSE 流式输出；
-- 有基础的前端页面（文档管理 + 聊天）；
-- 后续可接入评测集，量化召回率、正确率、拒答率、延迟和成本。
+- 支持 PDF / DOCX / Markdown / TXT 上传；
+- 自动解析、清洗、切片、向量化并写入 PostgreSQL（pgvector）；
+- 问题侧支持多意图拆解、向量 + BM25 混合检索、RRF 融合；
+- 调用大模型生成带引用的回答，支持 SSE 流式输出；
+- 有可用的文档管理、聊天、评测页面；
+- 有可重复的评测集和指标，能支撑优化对比。
 
-### 1.2 非目标（当前阶段明确不做）
+### 1.2 非目标（当前不做）
 
-- 不做微服务拆分（理由见 8.1）；
-- 不做多租户/复杂权限（当前只有 `kb_id` 级别隔离）；
+- 不做微服务拆分、K8s、分布式索引；
+- 不做多租户 / 复杂 RBAC（只有 `kb_id` 级隔离）；
 - 不做模型微调/训练；
-- 不做多模态（图片、表格 OCR）；
-- 不做高可用集群、K8s、分布式部署；
-- 不做 Agent 自主规划（当前只做 RAG 问答）。
+- 不做多模态、OCR、表格结构化；
+- 不做 Agent 自主规划（当前是 RAG 问答，不是 Agent）；
+- 不做可视化工作流编辑器。
 
 ---
 
@@ -34,54 +36,56 @@
 
 ```mermaid
 flowchart LR
-    U[浏览器<br/>上传/聊天页面] -->|HTTP / SSE| APP[Spring Boot 单体应用]
-    APP -->|JDBC| PG[(PostgreSQL 16<br/>+ pgvector)]
-    APP -->|HTTPS| DS[阿里云百炼<br/>qwen-plus 对话<br/>text-embedding-v3 向量]
-    APP -.已部署、暂未使用.-> REDIS[(Redis 7)]
-    APP --- FS[本地文件存储<br/>uploads/]
+    U[浏览器] -->|HTTP / SSE| APP[Spring Boot 单体应用]
+    APP -->|JDBC| PG[(PostgreSQL 16 + pgvector)]
+    APP -->|HTTPS| DS[阿里云百炼<br/>qwen-plus / text-embedding-v3]
+    APP -.预留、暂未使用.-> REDIS[(Redis 7)]
+    APP --- FS[(uploads/ 原文件)]
 ```
 
-说明：
-
-- 应用是**单体**，一个进程同时提供页面、REST API、异步索引、流式问答；
-- `Redis` 容器已启动，但**当前代码还没有使用**（预留给缓存/限流，见演进路线）；
-- 大模型和 Embedding 都是外部 SaaS，通过 OpenAI 兼容 HTTP 接口调用；
-- 上传的原始文件落在本地 `uploads/`，数据库只存路径。
+- 单体应用同时提供页面、REST API、异步索引、流式问答；
+- 文件本体在 `uploads/`（容器内挂载 volume），数据库只存元数据、切片与向量；
+- Redis 容器已部署，但当前代码未使用，预留给缓存/限流/会话；
+- 模型与 Embedding 都是外部 SaaS，通过 OpenAI 兼容 HTTP 接口调用。
 
 ---
 
-## 3. 总体架构
-
-### 3.1 分层
+## 3. 分层架构
 
 ```mermaid
 flowchart TB
     subgraph 接入层
+        FE[静态前端<br/>问答页 / 评测页]
         C1[HealthController]
         C2[DocumentController]
         C3[SearchController]
         C4[ChatController]
-        FE[静态前端 index.html/app.js]
+        C5[EvalController]
     end
 
     subgraph 业务层
         S1[DocumentService]
         S2[IndexService]
         S3[RetrievalService]
-        S4[ChatService]
+        S4[QueryDecompositionService]
+        S5[Bm25Retriever]
+        S6[ChatService]
+        S7[EvalService]
     end
 
     subgraph 能力层
-        P[TextExtractor<br/>PDFBox/POI]
-        CL[TextCleaner<br/>去页眉页脚/页码/断行]
+        P[TextExtractor]
+        CL[TextCleaner]
         CH[ChunkingService]
-        EMB[EmbeddingClient<br/>DashScope / Mock]
-        LLM[ChatClient<br/>DashScope / Mock]
+        EMB[EmbeddingClient]
+        LLM[ChatClient]
     end
 
     subgraph 数据访问层
         D1[DocumentDao]
         D2[ChunkDao]
+        D3[EvalDao]
+        D4[QaLogDao]
     end
 
     subgraph 基础设施
@@ -92,41 +96,49 @@ flowchart TB
 
     FE --> C2
     FE --> C4
+    FE --> C5
     C2 --> S1
     S1 --> D1
     S1 --> S2
     S2 --> P
+    S2 --> CL
     S2 --> CH
     S2 --> EMB
     S2 --> D2
     C3 --> S3
+    C4 --> S6
+    S6 --> S3
+    S6 --> LLM
+    S3 --> S4
+    S3 --> S5
     S3 --> EMB
     S3 --> D2
-    C4 --> S4
-    S4 --> S3
-    S4 --> LLM
+    S7 --> S3
+    S7 --> S6
+    S7 --> D3
+    S6 --> D4
     D1 --> PG
     D2 --> PG
+    D3 --> PG
+    D4 --> PG
     S1 --> FS
     EMB --> DS
     LLM --> DS
 ```
 
-### 3.2 模块职责
+### 模块职责
 
-| 包/目录 | 职责 | 说明 |
-|---|---|---|
-| `controller/` | HTTP 接口 | 只做参数接收、调用 Service、返回结果；不写业务 |
-| `service/` | 业务编排 | DocumentService（上传）、IndexService（索引）、QueryDecompositionService（查询拆解）、RetrievalService（向量+BM25 融合检索）、ChatService（问答） |
-| `parser/` | 文档解析与清洗 | PDFBox 解析 PDF（按页），POI 解析 DOCX（含表格）；TextCleaner 去页眉页脚/页码/断行 |
-| `chunk/` | 文本切片 | 段落优先 + 滑动窗口 + overlap |
-| `embedding/` | 向量化 | 接口 + 百炼实现 + Mock 实现 + 选择配置 |
-| `ai/` | 大模型 | ChatClient 接口 + 百炼实现 + Mock 实现 + 参数配置 |
-| `dao/` | 数据访问 | 只写 SQL，使用 Spring `JdbcClient` |
-| `config/` | 配置 | 线程池、异步开关 |
-| `resources/static/` | 前端 | 原生 HTML/CSS/JS，无框架 |
-| `resources/schema.sql` | 建表 | 幂等 DDL + 表/字段注释 |
-| `application.yml` | 配置 | 端口、数据库、AI、切片、检索参数 |
+| 包 | 职责 |
+|---|---|
+| `controller/` | HTTP 接口：文档、检索、问答、评测、健康检查 |
+| `service/` | 业务编排：上传、索引、检索、BM25、查询拆解、问答、评测 |
+| `parser/` | `TextExtractor` 解析 PDF/DOCX/TXT/MD；`TextCleaner` 清洗 |
+| `chunk/` | 段落聚合 + 滑动窗口切片 |
+| `embedding/` | Embedding 接口、百炼实现、Mock 实现、选择配置 |
+| `ai/` | ChatClient 接口、百炼实现、Mock 实现、模型参数 |
+| `dao/` | JdbcClient 访问 document / chunk / eval_case / qa_log |
+| `config/` | `indexExecutor`、`chatExecutor` 线程池 |
+| `resources/static/` | 原生 HTML/CSS/JS：问答页、评测页 |
 
 ---
 
@@ -134,185 +146,51 @@ flowchart TB
 
 ```text
 src/main/java/com/kagtro/rag/
-├── RagApplication.java              # 启动类
-├── ai/                              # 大模型能力
-│   ├── AiProperties.java            # 模型/参数配置
-│   ├── ChatClient.java              # 接口：chat / chatStream
-│   ├── ChatClientConfig.java        # 有 Key 用真实模型，否则 Mock
-│   ├── DashScopeChatClient.java     # 百炼 Chat Completions（含 SSE）
-│   └── MockChatClient.java          # 本地兜底
+├── RagApplication.java
+├── ai/
+│   ├── AiProperties.java
+│   ├── ChatClient.java              # chat / chatStream
+│   ├── ChatClientConfig.java
+│   ├── DashScopeChatClient.java
+│   └── MockChatClient.java
 ├── chunk/
-│   ├── ChunkDraft.java              # 切片草稿
-│   └── ChunkingService.java         # 切片算法
+│   ├── ChunkDraft.java
+│   └── ChunkingService.java
 ├── config/
 │   └── AsyncConfig.java             # indexExecutor / chatExecutor
 ├── controller/
-│   ├── HealthController.java        # /api/health
-│   ├── DocumentController.java      # 上传/列表/状态/重建/切片
-│   ├── SearchController.java        # /api/search
-│   └── ChatController.java          # /api/chat、/api/chat/stream
+│   ├── HealthController.java
+│   ├── DocumentController.java
+│   ├── SearchController.java
+│   ├── ChatController.java
+│   └── EvalController.java
 ├── dao/
-│   ├── DocumentDao.java             # document 表
-│   └── ChunkDao.java                # chunk 表 + 向量检索 SQL
+│   ├── DocumentDao.java
+│   ├── ChunkDao.java                # 向量检索 SQL + BM25 取数
+│   ├── EvalDao.java
+│   └── QaLogDao.java
 ├── embedding/
-│   ├── EmbeddingClient.java         # 接口
-│   ├── DashScopeEmbeddingClient.java# 百炼 Embedding
-│   ├── MockEmbeddingClient.java     # 本地伪向量
-│   └── EmbeddingConfig.java         # 选择实现
+│   ├── EmbeddingClient.java
+│   ├── DashScopeEmbeddingClient.java
+│   ├── MockEmbeddingClient.java
+│   └── EmbeddingConfig.java
 ├── parser/
-│   ├── PageText.java                # 页码 + 文本
-│   ├── TextExtractor.java           # PDF/DOCX/TXT/MD 解析
-│   └── TextCleaner.java             # 去页眉页脚/页码/断行/重复
-├── service/
-│   ├── DocumentService.java         # 上传、校验、落盘、触发索引
-│   ├── IndexService.java            # 异步索引编排
-│   ├── QueryDecompositionService.java # 多意图查询拆解
-│   ├── Bm25Retriever.java           # BM25 词法召回（中文二元组）
-│   ├── RetrievalService.java        # 向量+BM25 召回 + RRF 融合
-│   └── ChatService.java             # Prompt、生成、引用解析、流式
+│   ├── PageText.java
+│   ├── TextExtractor.java
+│   └── TextCleaner.java
+└── service/
+    ├── DocumentService.java
+    ├── IndexService.java
+    ├── RetrievalService.java
+    ├── Bm25Retriever.java
+    ├── QueryDecompositionService.java
+    ├── ChatService.java
+    └── EvalService.java
 ```
 
 ---
 
-## 5. 核心链路
-
-### 5.1 文档索引链路（写路径）
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant B as 浏览器
-    participant DC as DocumentController
-    participant DS as DocumentService
-    participant D as DocumentDao
-    participant IS as IndexService
-    participant P as TextExtractor
-    participant CL as TextCleaner
-    participant CH as ChunkingService
-    participant E as EmbeddingClient
-    participant CD as ChunkDao
-    participant PG as PostgreSQL
-
-    B->>DC: POST /api/documents (multipart)
-    DC->>DS: upload(kbId, file)
-    DS->>DS: 校验类型/大小、生成 UUID 文件名、落盘 uploads/
-    DS->>D: insert document(status=0)
-    D->>PG: INSERT
-    DS-)IS: indexAsync(docId)（@Async indexExecutor）
-    DS-->>B: {id, status=0}
-    IS->>D: update status=1
-    IS->>P: 解析文件
-    P-->>IS: List<PageText>（页码+文本）
-    IS->>CL: 清洗（去页眉页脚/页码/断行/重复）
-    CL-->>IS: List<PageText>（清洗后）
-    IS->>CH: 切片（700 字 / overlap 120）
-    CH-->>IS: List<ChunkDraft>
-    IS->>E: embedAll(切片文本)
-    E-->>IS: List<float[1024]>
-    IS->>CD: deleteByDoc + insertBatch
-    CD->>PG: INSERT chunk(embedding vector)
-    IS->>D: update chunk_count、status=2
-    Note over IS: 失败则 status=3 + error_msg，可手动重建
-```
-
-关键点：
-
-- 上传接口**不等待**解析/向量化，避免请求超时；
-- 文档状态：`0 待解析 / 1 解析中 / 2 已就绪 / 3 失败`；
-- 重建索引 = 删除旧 chunk 后重新执行整条链路（换模型/改切片参数/文档更新时使用）；
-- 切片保留页码，供回答引用溯源。
-
-### 5.2 检索链路
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant S as RetrievalService
-    participant E as EmbeddingClient
-    participant D as ChunkDao
-    participant PG as PostgreSQL
-
-    S->>E: embedAll([question])
-    E-->>S: float[1024]
-    S->>D: searchSimilar(kbId, vector, topK, minScore)
-    D->>PG: SELECT ... ORDER BY embedding <=> ? LIMIT ?
-    PG-->>D: topK 行（含 score）
-    D-->>S: rows
-    S-->>S: 转 RetrievedChunk
-```
-
-SQL 核心：
-
-```sql
-select c.id, c.doc_id, c.page_no, c.content, d.file_name,
-       1 - (c.embedding <=> CAST(:vector AS vector)) as score
-from chunk c
-join document d on d.id = c.doc_id
-where c.kb_id = :kbId
-  and d.status = 2
-  and 1 - (c.embedding <=> CAST(:vector AS vector)) >= :minScore
-order by c.embedding <=> CAST(:vector AS vector) asc
-limit :topK
-```
-
-- `<=>`：pgvector 余弦距离，越小越相似；
-- `1 - 距离`：相似度；
-- `kb_id`：检索范围隔离；
-- `status = 2`：只搜解析成功的文档；
-- 阈值过滤：相似度太低直接丢弃，作为拒答的第一道防线。
-
-**查询拆解（多意图）**：
-
-- `QueryDecompositionService` 先做低成本多意图判断，只有出现"分别/各自/以及/和/与"等信号时才调用 LLM；
-- LLM 输出 2~3 个子问题；失败时退回规则拆分；
-- `RetrievalService.retrieveWithDecomposition` 对每个子问题独立召回 topK；
-- 每个子问题同时走向量召回和 BM25 词法召回（中文按字符二元组）；
-- 用 RRF（`1/(60+rank)`）融合去重，再取最终 topK；
-- 简单问题不拆解，仍走向量 + BM25 融合。
-
-### 5.3 问答链路（含流式）
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant B as 浏览器
-    participant C as ChatController
-    participant S as ChatService
-    participant R as RetrievalService
-    participant L as ChatClient
-    participant DS as 百炼
-
-    B->>C: GET /api/chat/stream?question=...
-    C-->>B: SseEmitter（连接保持）
-    C-)S: streamTo(...)（chatExecutor 线程池）
-    S->>R: retrieve(kbId, question)
-    R-->>S: List<RetrievedChunk>
-    alt 没有召回
-        S-->>B: event:delta（资料中没有相关信息）
-        S-->>B: event:done（citations=[]）
-    else 有召回
-        S-->>B: event:meta（retrievedCount）
-        S->>L: chatStream(systemPrompt, userPrompt)
-        loop 模型逐段输出
-            L-->>S: delta 文本
-            S-->>B: event:delta
-        end
-        S-->>B: event:done（citations）
-    end
-```
-
-Prompt 规则：
-
-1. 只依据【资料】回答；
-2. 每个事实后用 `[编号]` 标注来源；
-3. 资料不足时回答"资料中没有相关信息"；
-4. 温度 0.2，控制发散。
-
-引用解析：正则匹配回答中的 `[n]`，只保留 `1 <= n <= 召回片段数` 的编号，映射回 chunk 的文件名/页码/分数。
-
----
-
-## 6. 数据模型
+## 5. 数据模型
 
 ```mermaid
 erDiagram
@@ -348,18 +226,11 @@ erDiagram
     }
     qa_log {
         bigint id PK
-        bigint user_id
         bigint kb_id
         text question
         text retrieved_ids
         text answer
-        int prompt_tokens
-        int completion_tokens
-        numeric cost
-        int first_token_ms
         int total_ms
-        boolean cache_hit
-        smallint feedback
         timestamptz created_at
     }
     eval_case {
@@ -368,277 +239,277 @@ erDiagram
         text question
         text ground_truth
         text doc_ids
+        text optional_files
+        text keywords
+        varchar difficulty
         varchar category
     }
 ```
 
-| 表 | 状态 | 说明 |
-|---|---|---|
-| `kb` | 使用中 | 知识库；当前默认 id=1 |
-| `document` | 使用中 | 原始文档 + 解析状态 |
-| `chunk` | 使用中 | 切片 + 1024 维向量（HNSW 余弦索引） |
-| `qa_log` | **已建表，未写入** | 预留给问答日志/成本/延迟统计 |
-| `eval_case` | **已建表，未使用** | 预留给评测集 |
+关键点：
 
-索引：
-
-- `idx_chunk_embedding`：HNSW（`vector_cosine_ops`），加速向量检索；
-- `idx_chunk_kb`、`idx_chunk_doc`：普通 B-Tree，用于过滤；
-- `idx_document_kb`：按知识库查文档。
+- `document.status`：`0 待解析 / 1 解析中 / 2 已就绪 / 3 失败`；
+- `chunk.embedding vector(1024)`，HNSW 余弦索引；
+- `chunk.doc_id` 外键 `ON DELETE CASCADE`，删文档自动删切片；
+- `eval_case` 支持必选文档、可选文档、关键词、难度、类别；
+- `qa_log` 记录问题、召回片段 id、回答、耗时；token/成本字段预留。
 
 ---
 
-## 7. API 设计
+## 6. 核心链路
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/` | 前端页面（静态资源） |
-| GET | `/api/health` | 健康检查（含数据库连通性） |
-| POST | `/api/documents` | 上传文档（multipart，自动异步索引） |
-| GET | `/api/documents?kbId=1` | 文档列表 |
-| GET | `/api/documents/{id}/status` | 文档解析状态 |
-| POST | `/api/documents/{id}/reindex` | 重建索引 |
-| DELETE | `/api/documents/{id}` | 删除文档（记录 + 切片 + 原文件） |
-| GET | `/api/documents/{id}/chunks` | 查看切片预览 |
-| POST | `/api/search` | 检索（JSON：kbId/question/topK/minScore） |
-| GET | `/api/search?question=...` | 检索（GET 调试） |
-| POST | `/api/chat` | 非流式问答 |
-| GET | `/api/chat?question=...` | 非流式问答（调试） |
-| GET | `/api/chat/stream?question=...` | 流式问答（SSE） |
+### 6.1 索引链路（写）
 
-SSE 事件：
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 浏览器
+    participant DC as DocumentController
+    participant DS as DocumentService
+    participant IS as IndexService
+    participant P as TextExtractor
+    participant CL as TextCleaner
+    participant CH as ChunkingService
+    participant E as EmbeddingClient
+    participant CD as ChunkDao
+    participant PG as PostgreSQL
 
-| 事件 | 数据 | 说明 |
-|---|---|---|
-| `meta` | `{"retrievedCount": N}` | 检索完成 |
-| `delta` | `{"text": "..."}` | 回答片段 |
-| `done` | `{"citations":[...],"retrievedCount":N}` | 生成结束 + 引用 |
-| `error` | `{"msg":"..."}` | 异常 |
+    B->>DC: POST /api/documents
+    DC->>DS: upload(kbId, file)
+    DS->>DS: 校验类型/大小、UUID 文件名、落盘 uploads/
+    DS->>PG: insert document(status=0)
+    DS-)IS: indexAsync(docId)
+    DS-->>B: {id, status=0}
 
----
-
-## 8. 技术选型与理由
-
-### 8.1 为什么是单体，不是微服务
-
-- 团队只有一个人，两周时间；
-- 业务边界简单：索引 + 检索 + 问答，没必要引入注册中心/网关/链路追踪；
-- 单体部署简单（一个 jar + 两个容器），排错成本低；
-- 采用**模块化分包**（controller/service/parser/chunk/embedding/dao），保留未来拆分可能。
-
-**面试回答**：先单体跑通业务，等"索引吞吐"和"在线问答"的扩缩容需求出现，再按这个边界拆成两个服务；现在拆是过度设计。
-
-### 8.2 为什么用 PostgreSQL + pgvector
-
-| 方案 | 优点 | 缺点 |
-|---|---|---|
-| **pgvector（选型）** | 少一个组件；业务表和向量同库，删文档可级联；SQL 熟悉；HNSW 够用 | 超大规模/高并发不如专用向量库 |
-| Milvus | 专用向量库，规模大 | 组件重、运维成本高，两周项目不划算 |
-| Elasticsearch kNN | 检索生态成熟 | 需要额外集群/调参，项目里已用 ES 的话更合适 |
-
-当前数据量（个人项目）用 pgvector 完全够，且"少一个组件"对两周项目非常重要。
-
-### 8.3 为什么用 `@Async` 而不引入 Kafka
-
-- 索引是"解析 + Embedding"的秒级到分钟级任务，用线程池即可；
-- Kafka 需要额外部署、序列化、消费组、重试/死信，增加联调成本；
-- 当前用"任务状态字段 + 手动重建"保证可恢复。
-
-**演进**：上量后改为"本地消息表（outbox）→ Kafka → 幂等消费"，索引任务可重试、可并行、可观测。
-
-### 8.4 为什么用 SSE 而不是 WebSocket
-
-- 问答是**单向**流式输出（服务端 → 浏览器），不需要双向通信；
-- SSE 基于 HTTP，浏览器用 `EventSource` 即可，服务端用 `SseEmitter`；
-- WebSocket 更重，还要处理心跳、重连、协议升级。
-
-注意：`EventSource` 只支持 GET，所以流式接口设计为 GET + query 参数。
-
-### 8.5 为什么有 Mock 实现
-
-- 没有 API Key 时也能跑通"上传→索引→检索→问答"整条链路；
-- 方便演示、方便别人克隆项目后启动；
-- 有 Key 时自动切换真实实现（配置驱动）。
-
-### 8.6 配置与密钥
-
-- 密钥放项目根目录 `.env`，通过 `spring.config.import` 加载；
-- `.env` 已加入 `.gitignore`，不提交；
-- 生产环境可改用环境变量或配置中心。
-
-### 8.7 检索参数
-
-| 参数 | 当前值 | 说明 |
-|---|---|---|
-| `rag.chunk-size` | 700 | 切片大小（字符） |
-| `rag.chunk-overlap` | 120 | 相邻切片重叠 |
-| `rag.top-k` | 5 | 召回数量 |
-| `rag.score-threshold` | 0.5 | 阈值；经 150 题扫描 0.1/0.3/0.5 指标一致，0.5 延迟更低；0.7 开始漏召回 |
-| `rag.query-decomposition-enabled` | true | 多意图查询拆解开关 |
-| `rag.hybrid-enabled` | true | 向量 + BM25 混合检索开关 |
-| `ai.embedding-dimension` | 1024 | text-embedding-v3 维度 |
-| `ai.temperature` | 0.2 | 生成温度 |
-| `ai.max-tokens` | 800 | 回答最大长度 |
-
----
-
-## 9. 关键设计决策
-
-1. **上传与索引异步解耦**：接口只负责落盘 + 建记录，索引后台执行，状态可轮询；
-2. **切片保留页码**：回答引用能定位到原文页；
-3. **检索 SQL 带 `kb_id` 和 `status` 过滤**：范围隔离 + 不搜脏数据；
-4. **阈值过滤前置**：低相似度不进入 Prompt，降低幻觉；
-5. **Prompt 强制引用 + 拒答**：资料不足时明确说"没有相关信息"；
-6. **引用二次校验**：只接受 `[1..N]` 范围内的编号，防止模型编造来源；
-7. **流式输出用独立线程池**：不阻塞 Tomcat 线程，索引与问答互不影响；
-8. **索引失败落状态**：`status=3 + error_msg`，可手动重建，不静默失败；
-9. **Mock 降级**：无 Key 也能演示完整链路；
-10. **不引入消息队列**：以最小复杂度完成当前目标，演进方案明确。
-
----
-
-## 10. 非功能与当前限制
-
-### 10.1 安全
-
-- **没有登录/鉴权**：所有 API 公开，`kbId` 由请求传入，存在越权风险；
-- 没有用户表、没有文档级 ACL；
-- 前端与后端同源，未配置 CORS；
-- `.env` 未提交，但 API Key 曾出现在聊天中，建议轮换。
-
-### 10.2 可靠性
-
-- Embedding/Chat 有 3 次重试；流式接口失败发 `error` 事件；
-- 索引失败可手动重建；没有自动重试/死信队列；
-- 没有幂等键，重复上传会重复索引；
-- 没有并发限制。
-
-### 10.3 性能
-
-- 单机、单实例；没有压测数据；
-- HNSW 索引已建，但 topK/阈值未调优；
-- 没有缓存（Redis 未使用）、没有限流；
-- 切片/嵌入是串行批处理，文档大时索引较慢。
-
-### 10.4 可观测性
-
-- 只有应用日志；
-- `qa_log` 已建表但未写入，缺少 token/成本/延迟统计；
-- 没有指标监控、链路追踪。
-
-### 10.5 测试
-
-- 目前没有单元测试/集成测试；
-- 主要靠 curl + 页面手工验证。
-
-### 10.6 文档处理限制
-
-- 扫描版 PDF 没有文字层 → 解析为空，索引失败（暂不支持 OCR）；
-- DOCX 不保留页码（统一记为第 1 页）；
-- 不支持表格结构化解析、图片、公式。
-
----
-
-## 11. 部署与运行
-
-### 11.1 本地开发
-
-```bash
-# 1. 启动中间件（PostgreSQL + pgvector、Redis）
-docker compose up -d
-
-# 2. 启动应用
-mvn spring-boot:run
-
-# 3. 打开页面
-http://localhost:8080
+    IS->>PG: update status=1
+    IS->>P: 解析文件
+    P-->>IS: List<PageText>（页码 + 文本）
+    IS->>CL: 清洗
+    CL-->>IS: 去页眉页脚/页码/断行/重复
+    IS->>CH: 切片（700 字，overlap 120）
+    CH-->>IS: List<ChunkDraft>
+    IS->>E: embedAll(切片文本)
+    E-->>IS: List<float[1024]>
+    IS->>CD: deleteByDoc + insertBatch
+    CD->>PG: 写 chunk（vector）
+    IS->>PG: update status=2, chunk_count=N
+    Note over IS: 失败则 status=3 + error_msg，可手动重建
 ```
 
-### 11.2 容器与端口
+设计要点：
 
-| 容器 | 镜像 | 端口 | 数据卷 |
-|---|---|---|---|
-| `rag-postgres` | `pgvector/pgvector:pg16` | 5432 | `pgdata` |
-| `rag-redis` | `redis:7-alpine` | 6379 | `redisdata` |
+- 上传接口不等待解析/Embedding，避免超时；
+- 重建索引会删除旧 chunk 后重新执行整条链路；
+- 切片保留页码，引用可定位到原页；
+- 向量化批量 10 条，失败重试 3 次；
+- 当前插入是逐条 SQL，规模大时可改批量写入。
 
-### 11.3 配置来源
+### 6.2 检索链路（读）
 
-- `application.yml`：通用配置；
-- `.env`：本地密钥（不提交）；
-- 生产：环境变量 / 配置中心。
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as RetrievalService
+    participant Q as QueryDecompositionService
+    participant E as EmbeddingClient
+    participant B as Bm25Retriever
+    participant D as ChunkDao
+    participant PG as PostgreSQL
 
-### 11.4 后续部署方案（未实现）
+    S->>Q: 判断是否多意图
+    Q-->>S: 1~3 个子问题（或原问题）
+    loop 每个子问题
+        S->>E: 问题向量化
+        E-->>S: float[1024]
+        S->>D: 向量检索 topK
+        D->>PG: SELECT ... ORDER BY embedding <=> ?
+        S->>B: BM25 检索 topK
+        B-->>S: 词法候选
+    end
+    S->>S: RRF 融合 + 去重 + 保证子查询 top1
+    S->>S: 阈值过滤 + 截断 topK
+    S-->>S: RetrievalResult
+```
 
-- 应用打 jar 或 Docker 镜像；
-- Nginx 反代 + 静态资源；
-- 数据库备份、监控告警、日志收集。
+关键设计：
+
+- **查询拆解**：
+  - 先做低成本判断（"分别/各自/以及"、两个问号、顿号 + 多个疑问词、长问题含"和/与"）；
+  - 命中多意图才调用 LLM，输出 JSON 子问题数组；
+  - 解析失败时按"和/与"规则拆分；
+  - 结果用 ConcurrentHashMap 缓存，避免重复调用。
+- **向量召回**：pgvector 余弦距离 `<=>`，相似度 `1 - distance`；
+- **BM25**：应用层实现，中文按字符二元组切词（不依赖分词器），K1=1.5、B=0.75；
+- **RRF**：`score = Σ 1/(60 + rank)`，只使用排名，避免分数量纲问题；
+- **多意图覆盖**：每个子查询的向量/BM25 top1 强制进入候选，防止被融合挤掉；
+- **阈值**：默认 0.5，低于阈值的片段不进入 Prompt；
+- **未实现 rerank**：当前是"召回后直接生成"，候选里没有精排模型。
+
+### 6.3 生成链路（含流式）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 浏览器
+    participant C as ChatController
+    participant S as ChatService
+    participant R as RetrievalService
+    participant L as ChatClient
+    participant Q as QaLogDao
+
+    B->>C: GET /api/chat/stream?question=...
+    C-->>B: SseEmitter
+    C-)S: streamTo(...)（chatExecutor）
+    S->>R: retrieveWithDecomposition(...)
+    R-->>S: chunks + queries
+    S-->>B: event:meta（片段/文档数/检索详情）
+    S->>L: chatStream(systemPrompt, userPrompt)
+    loop 模型逐段输出
+        L-->>S: delta
+        S-->>B: event:delta
+    end
+    S->>S: 引用解析 + 对齐 + 清理越界编号
+    S-->>B: event:done（citations + 清洗后回答）
+    S-)Q: 写 qa_log
+```
+
+Prompt 规则：
+
+1. 只依据资料回答，不使用资料外知识；
+2. 每个事实后用 `[编号]` 标注来源；
+3. 资料不足时回答"资料中没有相关信息"；
+4. 资料没有直接规定时，不要用法理/常识推断；
+5. 资料给出认定/排除条件、事实明显不符合时，应给出否定结论；
+6. 温度 0.2，max tokens 800。
+
+引用后处理：
+
+- 正则解析 `[n]`；
+- 只保留 `1~N`；
+- 用回答与片段的字符二元组重合度校验模型引用，过滤引错；
+- 对缺失/错误引用，补 1~2 个最相关且不同文档的片段；
+- 清理回答中不存在/未通过校验的编号。
+
+### 6.4 评测与日志
+
+- 评测集 150 题：86 可答 / 40 跨文档 / 24 不可答，其中 80 道难例；
+- `EvalService` 逐题执行：检索 → 判断期望文档是否命中 → 问答 → 关键词/拒答判断 → 延迟；
+- 指标：
+  - `Recall@K`：期望文档是否进前 K；
+  - `crossRecallAtK`：跨文档题是否覆盖多份文档；
+  - `groundedness`：回答引用是否覆盖期望文档；
+  - `answerAccuracy`：关键词粗筛；
+  - `refusalAccuracy`：不可答题是否正确拒答；
+  - `P95/avg latency`；
+- 输出 `eval/report-*.csv` + `report-latest.json`；
+- 评测页只读报告，不调模型；`POST /api/eval/run` 才会触发真实评测；
+- `qa_log` 由 `QaLogDao` 写入，失败不影响主流程。
 
 ---
 
-## 12. 演进路线
+## 7. 关键设计决策
 
-| 阶段 | 内容 | 目的 |
+| 决策 | 选择 | 理由 |
 |---|---|---|
-| P1（当前） | 索引 + 检索 + 问答 + 前端 + 流式 | 跑通闭环、可演示 |
-| P2 | 评测集（150 条，含 80 道难例）+ 指标（Recall@K/正确率/拒答率/P95/成本）+ 阈值调优 | 证明效果 |
-| P3 | `qa_log` 落库、删除文档、多知识库、缓存/限流 | 工程化 |
-| P4 | Rerank、混合检索（BM25+向量）、OCR、文档版本 | 效果提升 |
-| P5 | 鉴权/权限、Kafka/outbox、监控、CI/CD、部署 | 生产化 |
+| 架构 | 单体 Spring Boot | 个人项目，边界简单；拆微服务是过度设计 |
+| 向量库 | PostgreSQL + pgvector | 少一个组件，业务表/向量同库，删文档可级联 |
+| 索引 | `@Async` 线程池 | 秒级到分钟级任务，不需要 Kafka |
+| 检索 | 向量 + BM25 + RRF | 语义与词法互补，RRF 不依赖分数量纲 |
+| 查询拆解 | LLM + 规则兜底 + 缓存 | 多意图问题单向量会被一个意图主导 |
+| 生成 | qwen-plus，SSE | 流式体验好，OpenAI 兼容易替换 |
+| 引用 | 后处理对齐 | Prompt 约束不能保证模型一定写对 |
+| 阈值 | 0.5 | 0.1~0.5 指标一致，0.5 延迟更低；0.7 开始漏召回 |
+| Mock 实现 | 无 Key 可跑通 | 方便演示与别人克隆启动 |
 
 ---
 
-## 13. 面试讲解要点（3 分钟版）
+## 8. 工程化与部署
 
-> "这是一个企业知识库 RAG 系统，后端用 Spring Boot 单体 + PostgreSQL/pgvector，前端原生 JS。
-> 写路径：上传文档后异步解析、切片、调用 Embedding 写入向量库，文档状态可轮询；
-> 读路径：问题向量化 → 余弦检索 topK → 阈值过滤 → 拼带编号的资料 Prompt → 调 qwen-plus 流式生成 → 解析 `[n]` 引用映射回原文页码。
-> 关键取舍：单体而不是微服务、pgvector 而不是 Milvus、@Async 而不是 Kafka、SSE 而不是 WebSocket；
-> 目前已知不足：没有鉴权、没有评测、阈值没调优、Redis 还没用起来；下一步先做评测集和日志。"
+### 8.1 P1 完成情况
 
-如果被追问：
-
-- "为什么不用微服务？" → 见 8.1；
-- "怎么保证不瞎编？" → 阈值 + 只给资料 + 强制引用 + 拒答 + 引用二次校验；
-- "怎么证明有效？" → 目前没有，下一步做 150 条评测集算 Recall@K/正确率/拒答率；
-- "数据量大了怎么办？" → 先调 HNSW 参数/加副本，再考虑独立向量库；索引服务可拆。
-
----
-
-## 附录 A：配置项
-
-| 配置 | 默认值 | 位置 |
-|---|---|---|
-| `server.port` | 8080 | application.yml |
-| `spring.datasource.url` | `jdbc:postgresql://localhost:5432/rag` | application.yml |
-| `spring.sql.init.mode` | always | application.yml |
-| `spring.config.import` | `optional:file:./.env[.properties]` | application.yml |
-| `rag.upload-dir` | `E:/code/AI-RAG_training/uploads` | application.yml |
-| `rag.chunk-size` | 700 | application.yml |
-| `rag.chunk-overlap` | 120 | application.yml |
-| `rag.top-k` | 5 | application.yml |
-| `rag.score-threshold` | 0.5 | application.yml |
-| `ai.base-url` | 百炼兼容地址 | application.yml |
-| `ai.chat-model` | qwen-plus | application.yml |
-| `ai.embedding-model` | text-embedding-v3 | application.yml |
-| `ai.embedding-dimension` | 1024 | application.yml |
-| `ai.temperature` | 0.2 | application.yml |
-| `ai.max-tokens` | 800 | application.yml |
-
-## 附录 B：关键文件索引
-
-| 关注点 | 文件 |
+| 项 | 状态 |
 |---|---|
-| 启动 | `RagApplication.java` |
-| 建表 | `resources/schema.sql` |
-| 配置 | `resources/application.yml` |
-| 上传/索引 | `DocumentController`、`DocumentService`、`IndexService` |
-| 解析/清洗/切片 | `TextExtractor`、`TextCleaner`、`ChunkingService` |
-| 向量化 | `EmbeddingClient`、`DashScopeEmbeddingClient` |
-| 检索 SQL | `ChunkDao.searchSimilar` |
-| 问答/引用 | `ChatService`、`ChatController` |
-| 前端 | `static/index.html`、`static/js/app.js` |
+| `ChunkingServiceTest` | ✅ 3 个用例 |
+| `TextCleanerTest` | ✅ 3 个用例 |
+| `QueryDecompositionServiceTest` | ✅ 3 个用例 |
+| `EvalService` 指标计算单测 | ⬜ 未补 |
+| `ChatService` 引用对齐单测 | ⬜ 未补 |
+| Dockerfile + compose app 服务 | ✅ |
+| GitHub Actions `mvn test` | ✅ |
+| `qa_log` 落库 | ✅ 问题、召回 ids、回答、总耗时 |
+| token / 成本记录 | ⬜ 未接（字段预留） |
 
+### 8.2 部署与运行
 
+- **单元测试**：3 个测试类、9 个用例（切片、清洗、查询拆解），`mvn test`；
+- **CI**：GitHub Actions push/PR 自动跑测试；
+- **Docker**：多阶段构建，运行镜像只含 JRE；
+- **Compose**：app + PostgreSQL + Redis，`uploads/` 挂载 volume；
+- **配置**：`.env` 加载 `DASHSCOPE_API_KEY`，已 gitignore；
+- **健康检查**：`/api/health`、`/actuator/health`；
+- **日志**：`qa_log` 记录问答；token/成本字段预留。
 
+---
 
+## 9. 当前指标与局限
 
+### 9.1 指标（150 题，topK=8，minScore=0.5）
+
+| 指标 | 结果 |
+|---|---|
+| Recall@8 | 1.000 |
+| 跨文档召回 | 1.000 |
+| 引用覆盖率 | 1.000 |
+| 关键词正确率 | 1.000 |
+| 拒答准确率 | 1.000 |
+| P95 / 平均延迟 | 9.9s / 3.7s |
+
+> 详细阈值扫描与失败案例见 [failure-analysis.md](failure-analysis.md)。
+
+### 9.2 局限
+
+- **评测饱和**：自建 150 题全 1.0，不能代表开放场景；下一步要更难的数据集/人工抽检；
+- **P1 未完全闭环**：`EvalService` 指标计算、`ChatService` 引用对齐的单测未补；
+- **无鉴权**：`kbId` 由请求传入，存在越权风险；
+- **无 rerank**：召回后直接生成，精度依赖召回；
+- **BM25 应用层实现**：全量扫描 chunk，规模大要换 ES/PG 全文索引；
+- **无 OCR**：扫描版 PDF 解析为空；
+- **无多轮会话/Agent**：当前是单轮 RAG；
+- **无监控/成本统计**：qa_log 只有耗时，token/成本未接；
+- **单机部署**：没有高可用、限流、缓存。
+
+### 9.3 演进路线
+
+1. 难例评测 + 人工抽检（先让指标可信）；
+2. rerank（召回 top 20~30 → 精排 top 3~5）；
+3. 按"第 X 条"结构切片 + 父子块；
+4. 鉴权 / 多知识库 / 限流 / 缓存；
+5. Agent 工具调用（在 RAG 之上加工具循环与轨迹）；
+6. OCR / 表格 / 多格式。
+
+---
+
+## 10. 面试讲解（3 分钟）
+
+> "这是一个企业知识库 RAG 系统。写入侧：上传后异步解析、清洗、切片，用 text-embedding-v3 生成 1024 维向量，存 PostgreSQL+pgvector 并建 HNSW 索引。读取侧：多意图问题先拆解，每个子问题做向量召回和 BM25 召回，用 RRF 融合，阈值过滤后拼带编号的 Prompt，调 qwen-plus 流式生成，解析引用并做对齐校验。评测侧：150 道题、80 道难例，Recall@8 1.0、引用覆盖 1.0、拒答 1.0，P95 约 10 秒。当前主要问题是评测饱和、没有鉴权和重排，下一步做难例评测和 rerank。"
+
+---
+
+## 附录：配置项
+
+| 配置 | 默认值 | 说明 |
+|---|---|---|
+| `server.port` | 8080 | 应用端口 |
+| `spring.datasource.url` | `jdbc:postgresql://localhost:5432/rag` | 数据库 |
+| `rag.upload-dir` | `E:/code/AI-RAG_training/uploads` | 文件目录 |
+| `rag.chunk-size` | 700 | 切片大小 |
+| `rag.chunk-overlap` | 120 | 重叠字符 |
+| `rag.top-k` | 5 | 线上默认召回数（评测用 8） |
+| `rag.score-threshold` | 0.5 | 相似度阈值 |
+| `rag.query-decomposition-enabled` | true | 查询拆解开关 |
+| `rag.hybrid-enabled` | true | 混合检索开关 |
+| `ai.chat-model` | qwen-plus | 对话模型 |
+| `ai.embedding-model` | text-embedding-v3 | 向量模型 |
+| `ai.embedding-dimension` | 1024 | 向量维度 |
+| `ai.temperature` | 0.2 | 生成温度 |
+| `ai.max-tokens` | 800 | 回答最大长度 |
